@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { Hono } from "hono";
+import type { MiddlewareHandler } from "hono";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
@@ -38,7 +39,7 @@ export class Room extends DurableObject {
     });
 
     // Register MCP tools
-    this.mcpServer.tool("list_pads", "List all pads in the room", {}, async () => {
+    this.mcpServer.tool("list_pads", "List all pads in the room", {}, () => {
       const pads = this.ctx.storage.sql
         .exec<{ name: string; version: number; updated_at: string }>(
           `SELECT name, version, updated_at FROM pads`
@@ -48,7 +49,7 @@ export class Room extends DurableObject {
       };
     });
 
-    this.mcpServer.tool("read_pad", "Read a pad by name", { name: z.string() }, async ({ name }) => {
+    this.mcpServer.tool("read_pad", "Read a pad by name", { name: z.string() }, ({ name }) => {
       const pad = this.ctx.storage.sql
         .exec<{ content: string; version: number }>(
           `SELECT content, version FROM pads WHERE name = ?`, name
@@ -63,7 +64,7 @@ export class Room extends DurableObject {
       name: z.string(),
       content: z.string(),
       ifMatch: z.string().optional()
-    }, async ({ name, content, ifMatch }) => {
+    }, ({ name, content, ifMatch }) => {
       if (getByteLength(content) > MAX_PAD_SIZE) {
         return { content: [{ type: "text", text: "Pad exceeds 256KB limit" }], isError: true };
       }
@@ -105,7 +106,7 @@ export class Room extends DurableObject {
     this.mcpServer.tool("append_pad", "Append text to a pad", {
       name: z.string(),
       text: z.string()
-    }, async ({ name, text }) => {
+    }, ({ name, text }) => {
       const existing = this.ctx.storage.sql
         .exec<{ content: string; version: number }>(
           `SELECT content, version FROM pads WHERE name = ?`, name
@@ -131,13 +132,13 @@ export class Room extends DurableObject {
       return { content: [{ type: "text", text: `Success. New version: ${newVersion}` }] };
     });
 
-    this.mcpServer.tool("delete_pad", "Delete a pad", { name: z.string() }, async ({ name }) => {
+    this.mcpServer.tool("delete_pad", "Delete a pad", { name: z.string() }, ({ name }) => {
       this.ctx.storage.sql.exec(`DELETE FROM pads WHERE name = ?`, name);
       this.ctx.storage.sql.exec(`DELETE FROM revisions WHERE pad_name = ?`, name);
       return { content: [{ type: "text", text: "Success" }] };
     });
 
-    this.mcpServer.tool("get_history", "Get revision history of a pad", { name: z.string() }, async ({ name }) => {
+    this.mcpServer.tool("get_history", "Get revision history of a pad", { name: z.string() }, ({ name }) => {
       const revisions = this.ctx.storage.sql
         .exec<{ version: number; created_at: string }>(
           `SELECT version, created_at FROM revisions WHERE pad_name = ? ORDER BY version DESC`, name
@@ -145,7 +146,8 @@ export class Room extends DurableObject {
       return { content: [{ type: "text", text: JSON.stringify(revisions, null, 2) }] };
     });
 
-    this.mcpServer.connect(this.mcpTransport);
+    // The transport needs no async setup; connect() only wires up handlers.
+    void this.mcpServer.connect(this.mcpTransport);
 
     // Handle MCP endpoints
     this.app.all("/mcp/:roomId/:secret/*", async (c) => {
@@ -153,7 +155,7 @@ export class Room extends DurableObject {
       if (c.req.method === "POST") {
         try {
           parsedBody = await c.req.json();
-        } catch (e) {
+        } catch {
           // Body might be empty or invalid JSON, ignore or let transport handle it
         }
       }
@@ -186,7 +188,7 @@ export class Room extends DurableObject {
 
     // Internal endpoint for initialization
     this.app.post("/init", async (c) => {
-      const { secret } = await c.req.json();
+      const { secret } = await c.req.json<{ secret: string }>();
       const existing = this.ctx.storage.sql
         .exec<{ value: string }>(`SELECT value FROM room_config WHERE key = 'secret_hash'`)
         .toArray()[0];
@@ -203,8 +205,8 @@ export class Room extends DurableObject {
     });
 
     // Middleware to verify secret for both /r/ and /mcp/
-    const verifySecret = async (c: any, next: any) => {
-      const providedSecret = c.req.param("secret");
+    const verifySecret: MiddlewareHandler = async (c, next) => {
+      const providedSecret = c.req.param("secret") ?? "";
       const hash = await hashSecret(providedSecret);
       
       const stored = this.ctx.storage.sql
@@ -222,7 +224,7 @@ export class Room extends DurableObject {
     this.app.use("/mcp/:roomId/:secret/*", verifySecret);
 
     // Agent Instruction Page
-    this.app.get("/r/:roomId/:secret", async (c) => {
+    this.app.get("/r/:roomId/:secret", (c) => {
       const roomId = c.req.param("roomId");
       const secret = c.req.param("secret");
       const baseUrl = new URL(c.req.url).origin;
@@ -249,7 +251,7 @@ MCP is available at \`${baseUrl}/mcp/${roomId}/${secret}/sse\`.
     });
 
     // List pads
-    this.app.get("/r/:roomId/:secret/pads", async (c) => {
+    this.app.get("/r/:roomId/:secret/pads", (c) => {
       const pads = this.ctx.storage.sql
         .exec<{ name: string; version: number; updated_at: string }>(`SELECT name, version, updated_at FROM pads`)
         .toArray();
@@ -257,7 +259,7 @@ MCP is available at \`${baseUrl}/mcp/${roomId}/${secret}/sse\`.
     });
 
     // Pad history
-    this.app.get("/r/:roomId/:secret/pads/:name/history", async (c) => {
+    this.app.get("/r/:roomId/:secret/pads/:name/history", (c) => {
       const name = c.req.param("name");
       const revisions = this.ctx.storage.sql
         .exec<{ version: number; created_at: string; content: string }>(`SELECT version, created_at, content FROM revisions WHERE pad_name = ? ORDER BY version DESC`, name)
@@ -266,7 +268,7 @@ MCP is available at \`${baseUrl}/mcp/${roomId}/${secret}/sse\`.
     });
 
     // Read pad
-    this.app.get("/r/:roomId/:secret/pads/:name", async (c) => {
+    this.app.get("/r/:roomId/:secret/pads/:name", (c) => {
       const name = c.req.param("name");
       const pad = this.ctx.storage.sql
         .exec<{ content: string; version: number; created_at: string; updated_at: string }>(`SELECT content, version, created_at, updated_at FROM pads WHERE name = ?`, name)
@@ -282,7 +284,7 @@ MCP is available at \`${baseUrl}/mcp/${roomId}/${secret}/sse\`.
     // Create / Replace pad
     this.app.put("/r/:roomId/:secret/pads/:name", async (c) => {
       const name = c.req.param("name");
-      const { content } = await c.req.json();
+      const { content } = await c.req.json<{ content: unknown }>();
       const ifMatch = c.req.header("If-Match");
       
       if (typeof content !== 'string') {
@@ -333,7 +335,7 @@ MCP is available at \`${baseUrl}/mcp/${roomId}/${secret}/sse\`.
     // Append to pad
     this.app.post("/r/:roomId/:secret/pads/:name/append", async (c) => {
       const name = c.req.param("name");
-      const { text } = await c.req.json();
+      const { text } = await c.req.json<{ text: unknown }>();
       
       if (typeof text !== 'string') {
         return c.json({ error: "Text must be a string" }, 400);
@@ -373,7 +375,7 @@ MCP is available at \`${baseUrl}/mcp/${roomId}/${secret}/sse\`.
     });
 
     // Delete pad
-    this.app.delete("/r/:roomId/:secret/pads/:name", async (c) => {
+    this.app.delete("/r/:roomId/:secret/pads/:name", (c) => {
       const name = c.req.param("name");
       
       this.ctx.storage.sql
@@ -388,7 +390,7 @@ MCP is available at \`${baseUrl}/mcp/${roomId}/${secret}/sse\`.
 
   async fetch(request: Request): Promise<Response> {
     // Reset the 30-day inactivity alarm
-    this.ctx.storage.setAlarm(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await this.ctx.storage.setAlarm(Date.now() + 30 * 24 * 60 * 60 * 1000);
     return this.app.fetch(request, this.env);
   }
 
