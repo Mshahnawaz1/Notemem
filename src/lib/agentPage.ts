@@ -17,10 +17,11 @@ export function renderAgentPage(opts: { origin: string; roomId: string; secret: 
       ? "This URL has **write** access."
       : "This URL is **read-only**. Writes return 403.";
 
-  const mcp =
+  const tools =
     role === "write"
-      ? `\n## MCP Server\nMCP is available at \`${origin}/mcp/${roomId}/${secret}/sse\`.\n`
-      : "";
+      ? "`list_pads`, `read_pad`, `get_history`, `write_pad`, `append_pad` and `delete_pad`"
+      : "`list_pads`, `read_pad` and `get_history` (read-only)";
+  const mcp = `\n## MCP Server\nStreamable HTTP at \`${origin}/mcp/${roomId}/${secret}\`, with the tools ${tools}.\n`;
 
   return `# Notemem Room: ${roomId}
 

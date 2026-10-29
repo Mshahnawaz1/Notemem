@@ -10,9 +10,9 @@ import { registerPadRoutes } from "./pads";
 export function createRoomApp(deps: { sql: SqlStorage; store: PadStore; mcp: McpHandler }): Hono<RoomEnv> {
   const app = new Hono<RoomEnv>();
 
-  // `/x/*` also matches `/x`, so these cover the agent page and the bare MCP URL.
+  // `/x/*` also matches `/x`, so this covers the agent page too.
   app.use("/r/:roomId/:secret/*", authenticate(deps.sql));
-  app.use("/mcp/:roomId/:secret/*", authenticate(deps.sql));
+  app.use("/mcp/:roomId/:secret", authenticate(deps.sql));
 
   app.get("/r/:roomId/:secret", (c) => {
     const page = renderAgentPage({
@@ -26,7 +26,8 @@ export function createRoomApp(deps: { sql: SqlStorage; store: PadStore; mcp: Mcp
 
   registerPadRoutes(app, deps.store);
 
-  app.all("/mcp/:roomId/:secret/*", (c) => deps.mcp(c.req.raw, c.get("role")));
+  // Exactly one MCP URL per key; subpaths such as `/sse` are 404.
+  app.all("/mcp/:roomId/:secret", (c) => deps.mcp(c.req.raw, c.get("role")));
 
   app.onError((error, c) => {
     console.error(JSON.stringify({ error: error.message }));
