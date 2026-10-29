@@ -16,9 +16,18 @@ function notFound(name: string): CallToolResult {
 function writeResultText(name: string, result: WriteResult): CallToolResult {
   if (result.ok) return text(`Saved "${name}". New version: ${result.version}. Pass ifMatch ${result.version} on your next write_pad.`);
   switch (result.error) {
-    case "not_found":
-      return text(`No pad named "${name}". Create it with write_pad first.`, true);
+    case "precondition_required":
+      return text(
+        `Not saved: "${name}" already exists, so replacing it requires ifMatch. Call read_pad, merge your change into the content, then retry write_pad with ifMatch set to the version it shows. To add text without merging, use append_pad.`,
+        true
+      );
+    case "exists":
+      // write_pad never sends "new"; kept so every store result has a message.
+      return text(`Not saved: "${name}" already exists. Call read_pad, then retry write_pad with ifMatch.`, true);
     case "conflict":
+      if (result.currentVersion === null) {
+        return text(`Conflict: "${name}" no longer exists. Call list_pads; to create it again, call write_pad without ifMatch.`, true);
+      }
       return text(
         `Conflict: "${name}" changed and is now at version ${result.currentVersion}. Call read_pad to get the latest content, merge your change into it, then retry write_pad with ifMatch ${result.currentVersion}. To add text without merging, use append_pad, which never conflicts.`,
         true
@@ -34,7 +43,7 @@ function writeResultText(name: string, result: WriteResult): CallToolResult {
 const ifMatchInput = z
   .union([z.number(), z.string()])
   .optional()
-  .describe("The version you last read. The write fails if the pad changed since. Omit only when creating a new pad.");
+  .describe("The version from read_pad. Required to replace an existing pad; the write fails if the pad changed since. Omit only when creating a new pad.");
 
 /** A fresh server for one request. Read keys only get the read tools. */
 export function createMcpServer(store: PadStore, role: Role): McpServer {
@@ -83,7 +92,7 @@ export function createMcpServer(store: PadStore, role: Role): McpServer {
   server.registerTool(
     "write_pad",
     {
-      description: "Create a pad or replace its entire content. When replacing, pass the version from read_pad as ifMatch.",
+      description: "Create a pad, or replace its entire content. Replacing requires ifMatch: the version from read_pad.",
       inputSchema: { name: padNameSchema, content: z.string(), ifMatch: ifMatchInput },
       annotations: { destructiveHint: true, idempotentHint: false },
     },
@@ -98,7 +107,7 @@ export function createMcpServer(store: PadStore, role: Role): McpServer {
   server.registerTool(
     "append_pad",
     {
-      description: "Append text to the end of an existing pad. Never conflicts with other writers. Include a leading newline if you want one.",
+      description: "Append text to the end of a pad, creating it if missing. Never conflicts with other writers. Include a leading newline if you want one.",
       inputSchema: { name: padNameSchema, text: z.string() },
       annotations: { destructiveHint: false, idempotentHint: false },
     },

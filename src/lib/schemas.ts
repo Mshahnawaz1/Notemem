@@ -15,7 +15,7 @@ export const padNameSchema = z
 export const sourceSchema = z.enum(["api", "mcp", "web"]);
 export type Source = z.infer<typeof sourceSchema>;
 
-export const versionSchema = z.number().int().positive();
+export const versionSchema = z.number().int().positive("Pad versions start at 1.");
 
 // Accepts `3` and the standard quoted ETag form `"3"` (optionally weak, `W/"3"`).
 export const ifMatchSchema = z
@@ -24,6 +24,12 @@ export const ifMatchSchema = z
   .regex(/^(W\/)?"?\d+"?$/, "If-Match must be a pad version number, e.g. If-Match: 3.")
   .transform((value) => Number(value.replace(/^W\//, "").replaceAll('"', "")))
   .pipe(versionSchema);
+
+// Only `*` makes sense for a pad: "create it, but only if it doesn't exist yet".
+export const ifNoneMatchSchema = z
+  .string()
+  .trim()
+  .refine((value) => value === "*", "If-None-Match only accepts *, meaning: create the pad only if it doesn't exist.");
 
 export const replaceBodySchema = z.object({ content: z.string() });
 export const appendBodySchema = z.object({ text: z.string() });
