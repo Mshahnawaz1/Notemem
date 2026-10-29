@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { withSecurityHeaders } from './lib/headers'
-import { generateRoomId, generateSecret, hashSecret, redactSecrets } from './lib/keys'
+import { deriveReadSecret, generateRoomId, generateSecret, hashSecret, redactSecrets } from './lib/keys'
 import { Room } from './room'
 
 export { Room }
@@ -11,8 +11,8 @@ const app = new Hono<{ Bindings: CloudflareBindings }>()
 // Main API to create a room
 app.post('/api/rooms', async (c) => {
   const roomId = generateRoomId()
-  const readSecret = generateSecret()
   const writeSecret = generateSecret()
+  const readSecret = await deriveReadSecret(writeSecret)
 
   const stub = c.env.ROOM.get(c.env.ROOM.idFromName(roomId))
   const created = await stub.init({ readHash: await hashSecret(readSecret), writeHash: await hashSecret(writeSecret) })

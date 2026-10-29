@@ -15,7 +15,7 @@ curl -X POST https://<your-worker>/api/rooms
 # {"roomId":"c7aaff8849ad","readUrl":"https://<your-worker>/r/c7aaff8849ad/...","writeUrl":"https://<your-worker>/r/c7aaff8849ad/..."}
 ```
 
-You get two URLs, shown only once. Anyone with the **write URL** can read and change pads, so treat it like a password. The **read URL** can list, read and see history; writes with it return 403.
+You get two URLs. Anyone with the **write URL** can read and change pads, so treat it like a password; it is shown only once. The **read URL** can list, read and see history; writes with it return 403. Opening the write URL in a browser shows both URLs again, so you can share read-only access later.
 
 Pad names use letters, digits, `.`, `_` and `-` (up to 64 characters, starting with a letter or digit).
 

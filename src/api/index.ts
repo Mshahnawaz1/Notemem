@@ -47,7 +47,7 @@ export function createRoomApp(deps: RoomAppDeps): Hono<RoomEnv> {
     return new Response(null, { status: 101, webSocket: pair[0] });
   });
 
-  registerPadRoutes(app, deps.store, deps.expiresAt);
+  registerPadRoutes(app, deps.store, deps.expiresAt, deps.sql);
 
   // Exactly one MCP URL per key; subpaths such as `/sse` are 404.
   app.all("/mcp/:roomId/:secret", (c) => deps.mcp(c.req.raw, c.get("role")));

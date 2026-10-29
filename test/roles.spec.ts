@@ -72,3 +72,19 @@ describe('read and write keys', () => {
     expect(read).not.toContain(room.writeSecret)
   })
 })
+
+describe('pad list role and read url', () => {
+  it('tells the write key its role and the read url', async () => {
+    const room = await createRoom()
+    const body = await (await call(`${room.base}/pads`)).json<{ role: string; read_url: string | null }>()
+    expect(body.role).toBe('write')
+    expect(new URL(body.read_url!).pathname).toBe(room.readBase)
+  })
+
+  it('gives the read key its role and no url', async () => {
+    const room = await createRoom()
+    const body = await (await call(`${room.readBase}/pads`)).json<{ role: string; read_url: string | null }>()
+    expect(body).toMatchObject({ role: 'read', read_url: null })
+    expect(JSON.stringify(body)).not.toContain(room.writeSecret)
+  })
+})

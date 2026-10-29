@@ -1,5 +1,6 @@
 import type { Context, Hono } from "hono";
 import type { z } from "zod";
+import { readSecretFor } from "../lib/keys";
 import type { Expected, Pad, PadStore, WriteResult } from "../lib/pads";
 import {
   appendBodySchema,
@@ -126,12 +127,24 @@ function padResponse(c: Context<RoomEnv>, pad: Pad): Response {
   });
 }
 
-export function registerPadRoutes(app: Hono<RoomEnv>, store: PadStore, expiresAt: () => number | null): void {
+export function registerPadRoutes(app: Hono<RoomEnv>, store: PadStore, expiresAt: () => number | null, sql: SqlStorage): void {
   const base = "/r/:roomId/:secret/pads";
 
-  app.get(base, (c) => {
+  app.get(base, async (c) => {
     const expires = expiresAt();
-    return c.json({ pads: store.list(), expires_at: expires === null ? null : new Date(expires).toISOString() });
+    const role = c.get("role");
+    // Only the write-key holder gets the read URL, so they can share read-only access from the UI.
+    let readUrl: string | null = null;
+    if (role === "write") {
+      const readSecret = await readSecretFor(sql, c.req.param("secret") ?? "");
+      if (readSecret) readUrl = `${new URL(c.req.url).origin}/r/${c.req.param("roomId")}/${readSecret}`;
+    }
+    return c.json({
+      pads: store.list(),
+      expires_at: expires === null ? null : new Date(expires).toISOString(),
+      role,
+      read_url: readUrl,
+    });
   });
 
   app.get(`${base}/:name/history`, (c) => {
