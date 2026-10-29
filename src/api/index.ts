@@ -6,22 +6,44 @@ import { authenticate } from "./auth";
 import type { RoomEnv } from "./auth";
 import { registerPadRoutes } from "./pads";
 
-/** The Hono app inside a room's Durable Object: agent page, pad routes and MCP. */
-export function createRoomApp(deps: { sql: SqlStorage; store: PadStore; mcp: McpHandler }): Hono<RoomEnv> {
+export interface RoomAppDeps {
+  sql: SqlStorage;
+  store: PadStore;
+  mcp: McpHandler;
+  /** When the room expires, in ms since the epoch, or null if no expiry is scheduled. */
+  expiresAt: () => Promise<number | null>;
+  /** Hands the server end of a new socket to the Durable Object's hibernation API. */
+  acceptWebSocket: (socket: WebSocket) => void;
+}
+
+/** The Hono app inside a room's Durable Object: agent page, pad routes, live updates and MCP. */
+export function createRoomApp(deps: RoomAppDeps): Hono<RoomEnv> {
   const app = new Hono<RoomEnv>();
 
   // `/x/*` also matches `/x`, so this covers the agent page too.
   app.use("/r/:roomId/:secret/*", authenticate(deps.sql));
   app.use("/mcp/:roomId/:secret", authenticate(deps.sql));
 
-  app.get("/r/:roomId/:secret", (c) => {
+  app.get("/r/:roomId/:secret", async (c) => {
     const page = renderAgentPage({
       origin: new URL(c.req.url).origin,
       roomId: c.req.param("roomId"),
       secret: c.req.param("secret"),
       role: c.get("role"),
+      pads: deps.store.list(),
+      expiresAt: await deps.expiresAt(),
     });
-    return c.text(page, 200, { "Content-Type": "text/markdown" });
+    return c.text(page, 200, { "Content-Type": "text/markdown; charset=utf-8", "Cache-Control": "no-store" });
+  });
+
+  // Live updates for the web UI: the room pushes `{pad, version, deleted?}` after every write.
+  app.get("/r/:roomId/:secret/ws", (c) => {
+    if (c.req.header("Upgrade")?.toLowerCase() !== "websocket") {
+      return c.json({ error: "This endpoint only accepts WebSocket connections (Upgrade: websocket)." }, 426);
+    }
+    const pair = new WebSocketPair();
+    deps.acceptWebSocket(pair[1]);
+    return new Response(null, { status: 101, webSocket: pair[0] });
   });
 
   registerPadRoutes(app, deps.store);
