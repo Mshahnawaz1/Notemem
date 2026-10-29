@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
-import { useRoute, useLocation } from 'wouter';
+import { Link, useRoute, useLocation } from 'wouter';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { ApiError, createPad, getPad, getRoom, updatePad, getHistory, deletePad } from '../lib/api';
@@ -56,7 +56,7 @@ function Banner({ tone, children, actions }: { tone: 'warning' | 'error' | 'info
 
 const bannerButton = 'px-3 py-1 rounded-lg text-xs font-medium bg-white border border-current/20 hover:bg-zinc-50 transition-colors';
 
-function CopyField({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     await navigator.clipboard.writeText(value);
@@ -65,12 +65,11 @@ function CopyField({ label, value, hint }: { label: string; value: string; hint?
   };
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <span className="font-medium">{label}</span>
-        <button onClick={() => void copy()} className="text-brand hover:text-brand-hover">{copied ? 'Copied' : 'Copy'}</button>
+      <div className="mb-1 font-medium text-zinc-600">{label}</div>
+      <div className="flex items-center bg-white border border-zinc-200 rounded-lg overflow-hidden">
+        <input readOnly value={value} aria-label={label} className="flex-1 min-w-0 bg-transparent px-2 py-1.5 font-mono text-[10px] text-zinc-500 focus:outline-none" onClick={e => e.currentTarget.select()} />
+        <button onClick={() => void copy()} className="shrink-0 px-2.5 py-1.5 border-l border-zinc-200 text-brand font-medium hover:bg-brand/5 transition-colors">{copied ? 'Copied' : 'Copy'}</button>
       </div>
-      <input readOnly value={value} className="w-full bg-zinc-100 p-1.5 rounded-lg mt-1 font-mono text-[10px] border border-zinc-200" onClick={e => e.currentTarget.select()} />
-      {hint && <div className="mt-1 text-[10px] text-zinc-400">{hint}</div>}
     </div>
   );
 }
@@ -361,7 +360,7 @@ export default function Room() {
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-zinc-50 border-r border-zinc-200 flex flex-col transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 border-b border-zinc-200 flex items-center justify-between">
           <div className="min-w-0">
-            <h2 className="font-bold text-xl text-brand">Notemem</h2>
+            <h2 className="font-bold text-xl text-brand"><Link href="/" title="Back to home" className="hover:text-brand-hover">Notemem</Link></h2>
             <div className="text-xs text-zinc-500 mt-1 truncate">Room: {roomId}</div>
             <div className="flex items-center gap-2 mt-1 text-[10px] text-zinc-500">
               <span className={`inline-block w-1.5 h-1.5 rounded-full ${live === 'open' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
@@ -369,7 +368,12 @@ export default function Room() {
               {info && !canWrite && <span className="ml-1 px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-700 font-medium">Read-only</span>}
             </div>
           </div>
-          <button className="md:hidden text-zinc-500" onClick={() => setSidebarOpen(false)}>×</button>
+          <div className="flex items-center gap-1 self-start">
+            <Link href="/" title="Back to home" aria-label="Back to home" className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100 transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
+            </Link>
+            <button className="md:hidden p-1.5 text-zinc-500" aria-label="Close pad list" onClick={() => setSidebarOpen(false)}>×</button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -411,10 +415,8 @@ export default function Room() {
         <div className="p-4 border-t border-zinc-200 text-xs text-zinc-500 space-y-3 bg-zinc-50">
           {canWrite ? (
             <>
-              <CopyField label="Write URL" value={`${baseUrl}${roomPath}`} hint="Can read and change pads. Keep it private." />
-              {info?.read_url
-                ? <CopyField label="Read URL" value={info.read_url} hint="Can only read. Safe to share for viewing." />
-                : <div className="text-[10px] text-zinc-400">This room has no recoverable read URL.</div>}
+              <CopyField label="Read/write URL" value={`${baseUrl}${roomPath}`} />
+              {info?.read_url && <CopyField label="Read-only URL" value={info.read_url} />}
               <CopyField label="MCP endpoint" value={`${baseUrl}/mcp/${roomId}/${secret}`} />
             </>
           ) : info && (
@@ -422,14 +424,16 @@ export default function Room() {
           )}
           {remaining !== null && expiresAt && (
             <div
-              title={`Deleted on ${expiresAt.toLocaleString()} unless a pad changes before then`}
-              className={`p-2 rounded-lg border ${remaining < 3 * 86400000 ? 'text-orange-600 bg-orange-50 border-orange-100' : 'text-zinc-600 bg-white border-zinc-200'}`}
+              title={`Deleted on ${expiresAt.toLocaleString()} unless a pad changes before then. Any change resets it to 30 days.`}
+              className={`flex items-center justify-between ${remaining < 3 * 86400000 ? 'text-orange-600' : 'text-zinc-500'}`}
             >
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Expires in:</span>
-                <span>{formatRemaining(remaining)}</span>
-              </div>
-              <div className="mt-1 text-[10px] text-zinc-400">Any change resets it to 30 days.</div>
+              <span className="font-medium">Expires in</span>
+              <span>{formatRemaining(remaining)}</span>
+            </div>
+          )}
+          {canWrite && (
+            <div className="px-2.5 py-2 rounded-lg bg-red-50 border border-red-100 text-[11px] leading-snug text-red-700">
+              Anyone with the read/write URL can change pads. Keep it private.
             </div>
           )}
         </div>
