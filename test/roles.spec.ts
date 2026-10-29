@@ -64,23 +64,15 @@ describe('read and write keys', () => {
     expect(write).toMatch(/USER-SUPPLIED DATA/)
     expect(write).toMatch(/write\*\* access/)
     expect(write).toMatch(/PUT /)
-    expect(write).toMatch(/\/mcp\//)
+    expect(write).toContain(`/mcp/${room.roomId}/${room.writeSecret}\``)
+    expect(write).toMatch(/write_pad/)
 
     const read = await (await call(room.readBase)).text()
     expect(read).toMatch(/USER-SUPPLIED DATA/)
     expect(read).toMatch(/read-only/)
     expect(read).not.toMatch(/PUT |POST |DELETE /)
-    expect(read).not.toMatch(/\/mcp\//)
+    expect(read).toContain(`/mcp/${room.roomId}/${room.readSecret}\``)
+    expect(read).not.toMatch(/write_pad|append_pad|delete_pad/)
     expect(read).not.toContain(room.writeSecret)
-  })
-
-  it('read key is refused on MCP until read-only tools exist', async () => {
-    const room = await createRoom()
-    const response = await call(`/mcp/${room.roomId}/${room.readSecret}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json, text/event-stream' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
-    })
-    expect(response.status).toBe(403)
   })
 })
