@@ -8,9 +8,11 @@ describe('Notemem worker', () => {
   it('creates a room', async () => {
     const response = await call('/api/rooms', { method: 'POST' })
     expect(response.status).toBe(200)
-    const data = await response.json<{ roomId: string; secret: string }>()
-    expect(data.roomId).toBeDefined()
-    expect(data.secret).toBeDefined()
+    const data = await response.json<{ roomId: string; readUrl: string; writeUrl: string }>()
+    expect(data.roomId).toMatch(/^[0-9a-f]{12}$/)
+    expect(data.writeUrl).toMatch(new RegExp(`/r/${data.roomId}/[0-9a-f]{32}$`))
+    expect(data.readUrl).toMatch(new RegExp(`/r/${data.roomId}/[0-9a-f]{32}$`))
+    expect(data.readUrl).not.toBe(data.writeUrl)
   })
 
   it('can create a pad', async () => {
