@@ -49,7 +49,7 @@ Prefer appending; when replacing a pad, send If-Match with its current version a
 
 ## MCP
 
-The room is also a remote MCP server (Streamable HTTP) at `https://<your-worker>/mcp/{roomId}/{writeSecret}` (MCP needs the write secret for now), with the tools `list_pads`, `read_pad`, `write_pad`, `append_pad`, `delete_pad` and `get_history`.
+The room is also a remote MCP server (Streamable HTTP) at `https://<your-worker>/mcp/{roomId}/{secret}`. The write secret gets the tools `list_pads`, `read_pad`, `get_history`, `write_pad`, `append_pad` and `delete_pad`; the read secret gets only the first three. `read_pad` starts with `version: N`; pass that as `ifMatch` to `write_pad` so a stale write fails instead of overwriting someone else's change. Any number of clients can connect to the same room at once.
 
 Claude Code:
 
