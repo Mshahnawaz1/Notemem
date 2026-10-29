@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { renderAgentPage } from "../lib/agentPage";
+import { redactSecrets } from "../lib/keys";
 import type { PadStore } from "../lib/pads";
 import type { McpHandler } from "../mcp/handler";
 import { authenticate } from "./auth";
@@ -52,7 +53,8 @@ export function createRoomApp(deps: RoomAppDeps): Hono<RoomEnv> {
   app.all("/mcp/:roomId/:secret", (c) => deps.mcp(c.req.raw, c.get("role")));
 
   app.onError((error, c) => {
-    console.error(JSON.stringify({ error: error.message }));
+    // Error text can quote the request URL, which holds the secret.
+    console.error(JSON.stringify({ error: redactSecrets(error.message) }));
     return c.json({ error: "Internal error" }, 500);
   });
 

@@ -35,6 +35,11 @@ export async function resolveRole(sql: SqlStorage, secret: string): Promise<Role
   return null;
 }
 
+/** Hides anything shaped like a secret (32+ hex characters) before text goes into a log or error. */
+export function redactSecrets(text: string): string {
+  return text.replace(/[0-9a-f]{32,}/gi, "<redacted>");
+}
+
 function toHex(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { generateRoomId, generateSecret, hashSecret } from './lib/keys'
+import { generateRoomId, generateSecret, hashSecret, redactSecrets } from './lib/keys'
 import { Room } from './room'
 
 export { Room }
@@ -30,7 +30,7 @@ app.post('/api/rooms', async (c) => {
 
 // TEMPORARY (Phase V): log request headers to pick the browser-detection signal. Remove after the spike.
 app.use('/r/*', async (c, next) => {
-  const path = new URL(c.req.url).pathname.replace(/^(\/r\/[^/]+\/)[^/]+/, '$1<redacted>')
+  const path = redactSecrets(new URL(c.req.url).pathname)
   console.log(JSON.stringify({
     spike: 'headers',
     method: c.req.method,
@@ -103,6 +103,12 @@ app.all('/r/:roomId/*', async (c) => {
 
 app.all('/mcp/:roomId/*', async (c) => {
   return roomStub(c.env, c.req.param('roomId')).fetch(c.req.raw)
+})
+
+// Hono's default handler logs the whole error, whose text can quote the URL and its secret.
+app.onError((error, c) => {
+  console.error(JSON.stringify({ error: redactSecrets(error.message) }))
+  return c.json({ error: 'Internal error' }, 500)
 })
 
 export default app
