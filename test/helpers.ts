@@ -43,3 +43,10 @@ export function postJson(path: string, body: unknown, headers: Record<string, st
     body: JSON.stringify(body),
   })
 }
+
+/** Reads a pad the way an agent does: raw text, with the version from the ETag. */
+export async function readPad(path: string): Promise<{ content: string; version: number }> {
+  const response = await call(path)
+  if (response.status !== 200) throw new Error(`readPad failed: ${response.status}`)
+  return { content: await response.text(), version: Number(response.headers.get('ETag')?.replaceAll('"', '')) }
+}
