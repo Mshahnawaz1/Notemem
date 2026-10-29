@@ -6,7 +6,9 @@
     "build": "npm --prefix web run build",
     "deploy": "npm run build && wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "test": "vitest"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc -b web --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",
@@ -14,11 +16,16 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.6.2",
+    "@cloudflare/vitest-plugin": "^1.4.11",
     "@cloudflare/workers-types": "^5.20261001.1",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.3",
-    "typescript": "^7.0.2",
-    "vitest": "^2.1.2",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^4.1.12",
     "wrangler": "^4.110.0"
   }
 }
