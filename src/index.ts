@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
+import { withSecurityHeaders } from './lib/headers'
 import { generateRoomId, generateSecret, hashSecret, redactSecrets } from './lib/keys'
 import { Room } from './room'
 
@@ -78,7 +79,7 @@ async function browserPage(c: Context<{ Bindings: CloudflareBindings }>, roomId:
   const page = new HTMLRewriter()
     .on('#app', {
       element(element) {
-        element.setInnerContent(`<pre style="white-space: pre-wrap">${escapeHtml(markdown)}</pre>`, { html: true })
+        element.setInnerContent(`<pre>${escapeHtml(markdown)}</pre>`, { html: true })
       },
     })
     .transform(shell)
@@ -111,4 +112,8 @@ app.onError((error, c) => {
   return c.json({ error: 'Internal error' }, 500)
 })
 
-export default app
+export default {
+  async fetch(request: Request, env: CloudflareBindings, ctx: ExecutionContext): Promise<Response> {
+    return withSecurityHeaders(await app.fetch(request, env, ctx))
+  },
+}

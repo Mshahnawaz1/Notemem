@@ -6,4 +6,8 @@
   body {
     @apply bg-zinc-50 text-zinc-900 font-sans;
   }
+  /* The agent page the Worker embeds in #app until the SPA mounts. Inline styles are blocked by the CSP. */
+  #app > pre {
+    @apply whitespace-pre-wrap;
+  }
 }
