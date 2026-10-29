@@ -4,7 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "assets": {
-    "directory": "web/dist"
+    "directory": "web/dist",
+    "binding": "ASSETS"
   },
   "durable_objects": {
     "bindings": [
