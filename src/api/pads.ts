@@ -126,10 +126,13 @@ function padResponse(c: Context<RoomEnv>, pad: Pad): Response {
   });
 }
 
-export function registerPadRoutes(app: Hono<RoomEnv>, store: PadStore): void {
+export function registerPadRoutes(app: Hono<RoomEnv>, store: PadStore, expiresAt: () => number | null): void {
   const base = "/r/:roomId/:secret/pads";
 
-  app.get(base, (c) => c.json({ pads: store.list() }));
+  app.get(base, (c) => {
+    const expires = expiresAt();
+    return c.json({ pads: store.list(), expires_at: expires === null ? null : new Date(expires).toISOString() });
+  });
 
   app.get(`${base}/:name/history`, (c) => {
     const name = parsePadName(c);

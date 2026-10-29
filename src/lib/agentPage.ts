@@ -21,9 +21,9 @@ function padList(pads: PadMeta[]): string {
 }
 
 function expiry(expiresAt: number | null): string {
-  const rule = "Rooms are deleted after 30 days of inactivity.";
+  const rule = "Rooms are deleted after 30 days without changes; reading doesn't count.";
   if (expiresAt === null) return rule;
-  return `${rule} This one is scheduled for deletion on ${new Date(expiresAt).toISOString().slice(0, 10)} unless it is used before then.`;
+  return `${rule} This one is scheduled for deletion on ${new Date(expiresAt).toISOString().slice(0, 16).replace("T", " ")} UTC unless a pad is changed before then.`;
 }
 
 export function renderAgentPage(input: AgentPageInput): string {

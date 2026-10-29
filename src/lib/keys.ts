@@ -16,10 +16,10 @@ export async function hashSecret(secret: string): Promise<string> {
 }
 
 /** Returns false if the room already has keys. */
-export function storeKeyHashes(sql: SqlStorage, readHash: string, writeHash: string): boolean {
+export function storeKeyHashes(sql: SqlStorage, readHash: string, writeHash: string, expiresAt: number): boolean {
   const existing = sql.exec(`SELECT 1 FROM room WHERE id = 1`).toArray();
   if (existing.length) return false;
-  sql.exec(`INSERT INTO room (id, read_hash, write_hash) VALUES (1, ?, ?)`, readHash, writeHash);
+  sql.exec(`INSERT INTO room (id, read_hash, write_hash, expires_at) VALUES (1, ?, ?, ?)`, readHash, writeHash, expiresAt);
   return true;
 }
 

@@ -11,8 +11,8 @@ export interface RoomAppDeps {
   sql: SqlStorage;
   store: PadStore;
   mcp: McpHandler;
-  /** When the room expires, in ms since the epoch, or null if no expiry is scheduled. */
-  expiresAt: () => Promise<number | null>;
+  /** When the room is deleted unless a pad changes first, in ms since the epoch. */
+  expiresAt: () => number | null;
   /** Hands the server end of a new socket to the Durable Object's hibernation API. */
   acceptWebSocket: (socket: WebSocket) => void;
 }
@@ -25,14 +25,14 @@ export function createRoomApp(deps: RoomAppDeps): Hono<RoomEnv> {
   app.use("/r/:roomId/:secret/*", authenticate(deps.sql));
   app.use("/mcp/:roomId/:secret", authenticate(deps.sql));
 
-  app.get("/r/:roomId/:secret", async (c) => {
+  app.get("/r/:roomId/:secret", (c) => {
     const page = renderAgentPage({
       origin: new URL(c.req.url).origin,
       roomId: c.req.param("roomId"),
       secret: c.req.param("secret"),
       role: c.get("role"),
       pads: deps.store.list(),
-      expiresAt: await deps.expiresAt(),
+      expiresAt: deps.expiresAt(),
     });
     return c.text(page, 200, { "Content-Type": "text/markdown; charset=utf-8", "Cache-Control": "no-store" });
   });
@@ -47,7 +47,7 @@ export function createRoomApp(deps: RoomAppDeps): Hono<RoomEnv> {
     return new Response(null, { status: 101, webSocket: pair[0] });
   });
 
-  registerPadRoutes(app, deps.store);
+  registerPadRoutes(app, deps.store, deps.expiresAt);
 
   // Exactly one MCP URL per key; subpaths such as `/sse` are 404.
   app.all("/mcp/:roomId/:secret", (c) => deps.mcp(c.req.raw, c.get("role")));
