@@ -73,6 +73,24 @@ export const updatePad = async (roomId: string, secret: string, name: string, co
   return res.json() as Promise<WriteResult>;
 };
 
+// Only creates: fails with 412 if a pad with this name already exists.
+export const createPad = async (roomId: string, secret: string, name: string, content: string) => {
+  const res = await fetch(`/r/${roomId}/${secret}/pads/${name}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'If-None-Match': '*',
+      ...SOURCE_HEADER
+    },
+    body: JSON.stringify({ content })
+  });
+  if (!res.ok) {
+    if (res.status === 412) throw new Error(`A pad named "${name}" already exists`);
+    throw new Error('Failed to create pad');
+  }
+  return res.json() as Promise<WriteResult>;
+};
+
 export const appendPad = async (roomId: string, secret: string, name: string, text: string) => {
   const res = await fetch(`/r/${roomId}/${secret}/pads/${name}/append`, {
     method: 'POST',

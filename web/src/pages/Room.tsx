@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useRef } from 'preact/hooks';
 import { useRoute, useLocation } from 'wouter';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { getPad, listPads, updatePad, getHistory, deletePad } from '../lib/api';
+import { createPad, getPad, listPads, updatePad, getHistory, deletePad } from '../lib/api';
 import type { PadMeta, Pad, Revision } from '../lib/api';
 
 export default function Room() {
@@ -92,7 +92,7 @@ export default function Room() {
     if (!newPadName || !roomId || !secret) return;
     try {
       setSaving(true);
-      await updatePad(roomId, secret, newPadName, '# New Pad', 1);
+      await createPad(roomId, secret, newPadName, '# New Pad');
       setNewPadName('');
       await fetchPads();
       setLocation(`/r/${roomId}/${secret}/pads/${newPadName}`);
