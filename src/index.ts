@@ -1,38 +1,30 @@
 import { Hono } from 'hono'
+import { generateRoomId, generateSecret, hashSecret } from './lib/keys'
 import { Room } from './room'
 
 export { Room }
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
 
-// Generate a random string
-const generateRandomString = (length: number) => {
-  const array = new Uint8Array(length)
-  crypto.getRandomValues(array)
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('').substring(0, length)
-}
-
 // Main API to create a room
 app.post('/api/rooms', async (c) => {
-  const roomId = generateRandomString(12)
-  const secret = generateRandomString(32)
-  
-  // Forward to DO to initialize
-  const id = c.env.ROOM.idFromName(roomId)
-  const stub = c.env.ROOM.get(id)
-  
-  const initReq = new Request(`http://internal/init`, {
-    method: 'POST',
-    body: JSON.stringify({ secret }),
-    headers: { 'Content-Type': 'application/json' }
-  })
-  
-  const res = await stub.fetch(initReq)
-  if (!res.ok) {
+  const roomId = generateRoomId()
+  const readSecret = generateSecret()
+  const writeSecret = generateSecret()
+
+  const stub = c.env.ROOM.get(c.env.ROOM.idFromName(roomId))
+  const created = await stub.init({ readHash: await hashSecret(readSecret), writeHash: await hashSecret(writeSecret) })
+  if (!created) {
     return c.json({ error: 'Failed to create room' }, 500)
   }
-  
-  return c.json({ roomId, secret })
+
+  // The raw secrets are only ever returned here.
+  const origin = new URL(c.req.url).origin
+  return c.json({
+    roomId,
+    readUrl: `${origin}/r/${roomId}/${readSecret}`,
+    writeUrl: `${origin}/r/${roomId}/${writeSecret}`,
+  })
 })
 
 // TEMPORARY (Phase V): log request headers to pick the browser-detection signal. Remove after the spike.
