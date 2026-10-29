@@ -12,7 +12,7 @@ export default function Home() {
     try {
       const { roomId, secret } = await createRoom();
       setLocation(`/r/${roomId}/${secret}`);
-    } catch (e) {
+    } catch {
       alert('Failed to create room');
       setLoading(false);
     }
@@ -49,7 +49,7 @@ export default function Home() {
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
           <button 
-            onClick={handleCreate}
+            onClick={() => void handleCreate()}
             disabled={loading}
             className="bg-brand hover:bg-brand-hover text-white font-semibold py-3 px-8 rounded-2xl shadow-xl transition-all transform hover:scale-105 disabled:opacity-50"
           >

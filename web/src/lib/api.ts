@@ -23,10 +23,15 @@ export interface Revision {
   content: string;
 }
 
+export interface WriteResult {
+  success: boolean;
+  version: number;
+}
+
 export const createRoom = async (): Promise<RoomCreated> => {
   const res = await fetch('/api/rooms', { method: 'POST' });
   if (!res.ok) throw new Error('Failed to create room');
-  return res.json();
+  return res.json() as Promise<RoomCreated>;
 };
 
 export const listPads = async (roomId: string, secret: string): Promise<PadMeta[]> => {
@@ -34,7 +39,7 @@ export const listPads = async (roomId: string, secret: string): Promise<PadMeta[
     headers: { 'Accept': 'application/json' }
   });
   if (!res.ok) throw new Error('Failed to list pads');
-  const data = await res.json();
+  const data = await res.json() as { pads: PadMeta[] };
   return data.pads;
 };
 
@@ -43,7 +48,7 @@ export const getPad = async (roomId: string, secret: string, name: string): Prom
     headers: { 'Accept': 'application/json' }
   });
   if (!res.ok) throw new Error('Failed to fetch pad');
-  return res.json();
+  return res.json() as Promise<Pad>;
 };
 
 export const updatePad = async (roomId: string, secret: string, name: string, content: string, version: number) => {
@@ -59,7 +64,7 @@ export const updatePad = async (roomId: string, secret: string, name: string, co
     if (res.status === 409) throw new Error('Conflict');
     throw new Error('Failed to update pad');
   }
-  return res.json();
+  return res.json() as Promise<WriteResult>;
 };
 
 export const appendPad = async (roomId: string, secret: string, name: string, text: string) => {
@@ -71,7 +76,7 @@ export const appendPad = async (roomId: string, secret: string, name: string, te
     body: JSON.stringify({ text })
   });
   if (!res.ok) throw new Error('Failed to append pad');
-  return res.json();
+  return res.json() as Promise<WriteResult>;
 };
 
 export const deletePad = async (roomId: string, secret: string, name: string) => {
@@ -79,7 +84,7 @@ export const deletePad = async (roomId: string, secret: string, name: string) =>
     method: 'DELETE'
   });
   if (!res.ok) throw new Error('Failed to delete pad');
-  return res.json();
+  return res.json() as Promise<{ success: boolean }>;
 };
 
 export const getHistory = async (roomId: string, secret: string, name: string): Promise<Revision[]> => {
@@ -87,6 +92,6 @@ export const getHistory = async (roomId: string, secret: string, name: string): 
     headers: { 'Accept': 'application/json' }
   });
   if (!res.ok) throw new Error('Failed to fetch history');
-  const data = await res.json();
+  const data = await res.json() as { revisions: Revision[] };
   return data.revisions;
 };

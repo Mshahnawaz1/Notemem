@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'preact/hooks';
+import { useCallback, useEffect, useState, useRef } from 'preact/hooks';
 import { useRoute, useLocation } from 'wouter';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -34,7 +34,7 @@ export default function Room() {
   const pollTimer = useRef<number | null>(null);
   const baseUrl = window.location.origin;
 
-  const fetchPads = async () => {
+  const fetchPads = useCallback(async () => {
     if (!roomId || !secret) return;
     try {
       const data = await listPads(roomId, secret);
@@ -42,9 +42,9 @@ export default function Room() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, [roomId, secret]);
 
-  const fetchPad = async (name: string, background = false) => {
+  const fetchPad = useCallback(async (name: string, background = false) => {
     if (!roomId || !secret) return;
     if (!background) setLoading(true);
     try {
@@ -64,19 +64,19 @@ export default function Room() {
     } finally {
       if (!background) setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPads();
-    const timer = setInterval(fetchPads, 5000);
-    return () => clearInterval(timer);
   }, [roomId, secret]);
 
   useEffect(() => {
+    void fetchPads();
+    const timer = setInterval(() => void fetchPads(), 5000);
+    return () => clearInterval(timer);
+  }, [fetchPads]);
+
+  useEffect(() => {
     if (activePadName) {
-      fetchPad(activePadName);
+      void fetchPad(activePadName);
       if (pollTimer.current) clearInterval(pollTimer.current);
-      pollTimer.current = window.setInterval(() => fetchPad(activePadName, true), 3000);
+      pollTimer.current = window.setInterval(() => void fetchPad(activePadName, true), 3000);
     } else {
       setPad(null);
       setContent('');
@@ -85,7 +85,7 @@ export default function Room() {
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
-  }, [activePadName, roomId, secret]);
+  }, [activePadName, fetchPad]);
 
   const handleCreatePad = async (e: Event) => {
     e.preventDefault();
@@ -96,8 +96,8 @@ export default function Room() {
       setNewPadName('');
       await fetchPads();
       setLocation(`/r/${roomId}/${secret}/pads/${newPadName}`);
-    } catch (e: any) {
-      alert(e.message);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }
@@ -109,10 +109,10 @@ export default function Room() {
     try {
       await updatePad(roomId, secret, activePadName, content, pad.version);
       setIsEditing(false);
-      fetchPad(activePadName);
-      fetchPads();
-    } catch (e: any) {
-      alert(e.message);
+      void fetchPad(activePadName);
+      void fetchPads();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
     }
@@ -121,23 +121,23 @@ export default function Room() {
   const handleDelete = async (name: string) => {
     if (!roomId || !secret || !confirm(`Delete pad ${name}?`)) return;
     await deletePad(roomId, secret, name);
-    fetchPads();
+    void fetchPads();
     if (activePadName === name) {
       setLocation(`/r/${roomId}/${secret}`);
     }
   };
 
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     if (!roomId || !secret || !activePadName) return;
     const revs = await getHistory(roomId, secret, activePadName);
     setHistory(revs);
-  };
+  }, [roomId, secret, activePadName]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (historyOpen) loadHistory();
-  }, [historyOpen, activePadName]);
+    if (historyOpen) void loadHistory();
+  }, [historyOpen, loadHistory]);
 
   const renderMarkdown = (text: string) => {
     return { __html: DOMPurify.sanitize(marked.parse(text) as string) };
@@ -177,13 +177,13 @@ export default function Room() {
                 >
                   {p.name}
                 </button>
-                <button onClick={() => handleDelete(p.name)} className="hidden group-hover:block px-2 text-red-400 hover:text-red-600">×</button>
+                <button onClick={() => void handleDelete(p.name)} className="hidden group-hover:block px-2 text-red-400 hover:text-red-600">×</button>
               </li>
             ))}
           </ul>
           
           {pads.length < 20 && (
-            <form onSubmit={handleCreatePad} className="mt-4">
+            <form onSubmit={(e) => void handleCreatePad(e)} className="mt-4">
               <input 
                 type="text" 
                 placeholder="+ New pad name" 
@@ -200,7 +200,7 @@ export default function Room() {
             <div className="flex items-center justify-between">
               <span className="font-medium">Web/Read/Write URL:</span>
               <button 
-                onClick={() => navigator.clipboard.writeText(`${baseUrl}/r/${roomId}/${secret}`)}
+                onClick={() => void navigator.clipboard.writeText(`${baseUrl}/r/${roomId}/${secret}`)}
                 className="text-brand hover:text-brand-hover"
               >Copy</button>
             </div>
@@ -210,7 +210,7 @@ export default function Room() {
             <div className="flex items-center justify-between">
               <span className="font-medium">MCP Endpoint:</span>
               <button 
-                onClick={() => navigator.clipboard.writeText(`${baseUrl}/mcp/${roomId}/${secret}`)}
+                onClick={() => void navigator.clipboard.writeText(`${baseUrl}/mcp/${roomId}/${secret}`)}
                 className="text-brand hover:text-brand-hover"
               >Copy</button>
             </div>
@@ -248,7 +248,7 @@ export default function Room() {
                 {isEditing ? (
                   <>
                     <button onClick={() => { setIsEditing(false); setContent(pad?.content || ''); }} className="text-sm px-2 sm:px-3 py-1.5 text-zinc-500 hover:bg-zinc-100 rounded-lg transition-colors">Cancel</button>
-                    <button onClick={handleSave} disabled={saving} className="text-sm px-3 sm:px-4 py-1.5 bg-brand text-white font-medium rounded-lg hover:bg-brand-hover shadow-md transition-all disabled:opacity-50">
+                    <button onClick={() => void handleSave()} disabled={saving} className="text-sm px-3 sm:px-4 py-1.5 bg-brand text-white font-medium rounded-lg hover:bg-brand-hover shadow-md transition-all disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save'}
                     </button>
                   </>
