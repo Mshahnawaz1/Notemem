@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:8787',
-      '/r': 'http://localhost:8787',
+      // ws: the room's live-update socket at /r/{id}/{secret}/ws.
+      '/r': { target: 'http://localhost:8787', ws: true },
       '/mcp': 'http://localhost:8787'
     }
   }
