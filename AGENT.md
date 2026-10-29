@@ -37,8 +37,8 @@ Notemem is a free, no-signup shared workspace where a human and any AI agent rea
 - Run the static checks first, in this order, and fix any failures before running tests:
   1. `npm run typecheck`: TypeScript `--noEmit` for the Worker (`src/`, `test/`) and for `web/`.
   2. `npm run lint`: ESLint with `typescript-eslint` and React hooks rules.
-- Then run `npm test` (Vitest with `@cloudflare/vitest-pool-workers`), which exercises the real Worker and Durable Object.
-- `typecheck` and `lint` are added in Phase 1 of `implementation.md`; until then, run `npx tsc -b --noEmit` in `web/` and skip lint.
+- Then run `npm test` (Vitest with `@cloudflare/vitest-plugin`), which exercises the real Worker and Durable Object. Storage is wiped after each test (`test/setup.ts`).
+- Use the shared helpers in `test/helpers.ts` (`createRoom`, `call`, `putJson`, `postJson`).
 - Each test creates its own room; don't rely on state left over from another test.
 - Every API rule (status codes, preconditions, roles, limits) needs a test. Concurrency changes need a concurrent-write test.
 - Check MCP changes with a real MCP client against `wrangler dev`, not only unit tests.
