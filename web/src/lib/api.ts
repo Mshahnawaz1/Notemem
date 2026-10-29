@@ -1,6 +1,7 @@
 export interface RoomCreated {
   roomId: string;
-  secret: string;
+  readUrl: string;
+  writeUrl: string;
 }
 
 export interface PadMeta {
@@ -20,8 +21,12 @@ export interface Pad {
 export interface Revision {
   version: number;
   created_at: string;
+  source: 'api' | 'mcp' | 'web';
   content: string;
 }
+
+// Marks writes from the web UI in pad history.
+const SOURCE_HEADER = { 'X-Notemem-Source': 'web' };
 
 export interface WriteResult {
   success: boolean;
@@ -56,7 +61,8 @@ export const updatePad = async (roomId: string, secret: string, name: string, co
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'If-Match': version.toString()
+      'If-Match': version.toString(),
+      ...SOURCE_HEADER
     },
     body: JSON.stringify({ content })
   });
@@ -71,7 +77,8 @@ export const appendPad = async (roomId: string, secret: string, name: string, te
   const res = await fetch(`/r/${roomId}/${secret}/pads/${name}/append`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...SOURCE_HEADER
     },
     body: JSON.stringify({ text })
   });
@@ -81,7 +88,8 @@ export const appendPad = async (roomId: string, secret: string, name: string, te
 
 export const deletePad = async (roomId: string, secret: string, name: string) => {
   const res = await fetch(`/r/${roomId}/${secret}/pads/${name}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: SOURCE_HEADER
   });
   if (!res.ok) throw new Error('Failed to delete pad');
   return res.json() as Promise<{ success: boolean }>;

@@ -10,8 +10,8 @@ export default function Home() {
   const handleCreate = async () => {
     setLoading(true);
     try {
-      const { roomId, secret } = await createRoom();
-      setLocation(`/r/${roomId}/${secret}`);
+      const { writeUrl } = await createRoom();
+      setLocation(new URL(writeUrl).pathname);
     } catch {
       alert('Failed to create room');
       setLoading(false);
