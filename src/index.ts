@@ -35,6 +35,21 @@ app.post('/api/rooms', async (c) => {
   return c.json({ roomId, secret })
 })
 
+// TEMPORARY (Phase V): log request headers to pick the browser-detection signal. Remove after the spike.
+app.use('/r/*', async (c, next) => {
+  const path = new URL(c.req.url).pathname.replace(/^(\/r\/[^/]+\/)[^/]+/, '$1<redacted>')
+  console.log(JSON.stringify({
+    spike: 'headers',
+    method: c.req.method,
+    path,
+    accept: c.req.header('Accept') ?? null,
+    secFetchDest: c.req.header('Sec-Fetch-Dest') ?? null,
+    secFetchMode: c.req.header('Sec-Fetch-Mode') ?? null,
+    userAgent: c.req.header('User-Agent') ?? null,
+  }))
+  await next()
+})
+
 // Forward all /r/* and /mcp/* requests to the appropriate DO
 app.all('/r/:roomId/*', async (c) => {
   const roomId = c.req.param('roomId')

@@ -1,8 +1,0 @@
-
-
-curl -X POST http://localhost:8787/r/c7aaff8849ad/0120af003e437f7f899464dd55c54674/pads/test-         
-  pad/append \                                                                           
-      -H "Content-Type: application/json" \                                              
-      -d '{"text": " This was appended."}'
-
-curl -X PUT http://localhost:8787/r/c7aaff8849ad/0120af003e437f7f899464dd55c54674/pads/test-pad \-H "Content-Type: application/json"\-d '{"content": "Hello World!"}'

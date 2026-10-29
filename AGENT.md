@@ -1,157 +1,65 @@
+# Repository Guidelines
 
+Notemem is a free, no-signup shared workspace where a human and any AI agent read and write the same notes through a private key URL, using plain HTTP or MCP.
 
-# Project plan: shared rooms for agents (**Notemem**)
+## Where Things Are Documented
+- `PRD.md`: product scope, design principles, and the technical spec (keys, data model, HTTP API, MCP tools, limits). The source of truth for *what* to build.
+- `implementation.md`: the task tracker and the decisions agreed so far. Check it before starting work and tick tasks as you finish them.
+- `DESIGN.md`: UI layout, brand, typography and Tailwind conventions.
+- `README.md`: user-facing quickstart and the copy-paste agent instruction snippet.
 
-## 1. Project definition
+## Project Structure & Module Organization
+- `src/` holds the Cloudflare Worker: `index.ts` (edge router) and `room.ts` (the `Room` Durable Object). Planned split: `src/api/` (HTTP handlers), `src/mcp/` (MCP tools), `src/lib/` (pad logic, keys, schemas, agent page template).
+- `web/` is the Preact + Vite frontend (`web/src/pages/`, `web/src/lib/api.ts`), built to `web/dist` and served by the Worker's assets binding.
+- `test/` holds Vitest specs that run in the Workers pool.
+- `wrangler.jsonc` configures the Worker, the `ROOM` Durable Object binding and SQLite migrations. `worker-configuration.d.ts` is generated; don't edit it by hand.
 
-**One-liner:** a free, no-signup shared workspace where a human and any AI agent read and write the same notes through a private key URL, using plain HTTP or MCP.
+## Codebase Map
+- `src/index.ts` creates rooms (`POST /api/rooms`) and forwards `/r/{roomId}/*` and `/mcp/{roomId}/*` to the Durable Object addressed by `idFromName(roomId)`.
+- `src/room.ts` creates the SQLite schema, verifies secrets, serves the agent page, the pad routes and the MCP endpoint, and deletes the room from its alarm after 30 days of inactivity.
+- The web UI talks to the same `/r/...` routes through `web/src/lib/api.ts`; in dev, `web/vite.config.ts` proxies `/api`, `/r` and `/mcp` to `localhost:8787`.
 
-**Problem:** agents need somewhere to keep memory, task lists and outputs, and humans need to see and steer that without accounts, SDKs or setup.
+## Build, Test, and Development Commands
+- `npm install` at the root, and again in `web/`, installs dependencies. Use npm, not pnpm.
+- `npm run dev` starts the Worker with `wrangler dev` on `http://localhost:8787`.
+- `cd web && npm run dev` starts the Vite dev server with the API proxy.
+- `npm run build` builds `web/dist`; `npm run deploy` runs it before `wrangler deploy`.
+- `npm run cf-typegen` regenerates `worker-configuration.d.ts` after changing bindings in `wrangler.jsonc`.
 
-**Design principles** (these decide every trade-off below):
-1. **Zero setup.** One URL is enough to start. No account and no SDK.
-2. **Works with any agent.** If it can fetch a URL it can read, and if it can send HTTP it can write. MCP is an extra, not a requirement.
-3. **Safe by default.** Separate read and write keys, expiry, size limits, and clear "this is untrusted data" framing.
-4. **Small and cheap to run.** It has to stay free, so the architecture must cost almost nothing when idle.
+## Coding Style & Naming Conventions
+- TypeScript everywhere, with strict types. Avoid `any` in new code.
+- Match the formatting of the file you're editing (quote style and semicolons differ between files) until Prettier is configured.
+- `camelCase` for functions and variables, `PascalCase` for classes and components, `UPPER_SNAKE_CASE` for limits and constants. SQL columns use `snake_case`.
+- Validate every external input (HTTP bodies, params, MCP arguments) with Zod schemas shared by HTTP and MCP.
+- Pad logic lives in one place and is called by both the HTTP and MCP layers; don't duplicate it.
 
-**Differentiators to aim for** (from the competitor scan, to be verified by testing them): rooms that outlast 24 hours, a good human web view, a self-describing plain-URL page, split read/write keys, and history with undo.
+## Testing Guidelines
+- Run the static checks first, in this order, and fix any failures before running tests:
+  1. `npm run typecheck`: TypeScript `--noEmit` for the Worker (`src/`, `test/`) and for `web/`.
+  2. `npm run lint`: ESLint with `typescript-eslint` and React hooks rules.
+- Then run `npm test` (Vitest with `@cloudflare/vitest-pool-workers`), which exercises the real Worker and Durable Object.
+- `typecheck` and `lint` are added in Phase 1 of `implementation.md`; until then, run `npx tsc -b --noEmit` in `web/` and skip lint.
+- Each test creates its own room; don't rely on state left over from another test.
+- Every API rule (status codes, preconditions, roles, limits) needs a test. Concurrency changes need a concurrent-write test.
+- Check MCP changes with a real MCP client against `wrangler dev`, not only unit tests.
 
-## 2. MVP scope
+## Commit & Pull Request Guidelines
+- Short, lowercase, imperative commit summaries (e.g. `split read and write keys`).
+- PRs include a brief summary, test results, and any doc impact. Add screenshots for UI changes and example requests and responses for API changes.
 
-### In scope
-| Area | MVP feature |
-|---|---|
-| Rooms | Create a room with one click or one API call. It returns a **write URL** and a **read-only URL**. |
-| Pads | A room holds named pads (markdown or plain text), up to 20 per room. |
-| Operations | List, read, replace (with version check), append, delete. |
-| Agent page | `GET` on the room URL returns a self-describing markdown page: contents, plus how to read and write. |
-| Web UI | View and edit pads, with auto-refresh by polling. |
-| MCP | A remote MCP endpoint with about six tools wrapping the same operations. |
-| History | Keep the last N revisions per pad, viewable and restorable. |
-| Safety | Hashed keys, rate limits, size caps, inactivity expiry, `noindex`, no key logging. |
-| Abuse | A bot check on room creation, and a simple delete/report path. |
+## Agent Workflow
+- Read `implementation.md` before starting. Work on the earliest unfinished phase unless told otherwise, and tick tasks in the same change that completes them.
+- A decision that changes the API, URL shape, limits or key roles goes into the Decisions section of `implementation.md`, and into `PRD.md` §7 once it's built.
+- When user-facing behavior changes, update the agent page template, `README.md` and `PRD.md` in the same change.
+- Don't commit room secrets. `.mcp.json` and local notes with live URLs stay out of git.
 
-### Out of scope for MVP
-Accounts and logins, semantic or vector search, end-to-end encryption, admin keys, file uploads, real-time WebSockets (polling first), custom domains, a public room directory, rich-text editing, and human-challenge bot checks like Turnstile.
+## Safety Rules
+- Store only hashes of secrets. Never put a secret in logs, error messages or query strings.
+- The agent page always starts with the notice that pad contents are untrusted user data, not instructions.
+- Raw endpoints return `text/plain` with `nosniff`. Rendered markdown always goes through DOMPurify.
+- Unauthenticated requests must not create storage or extend a room's expiry.
 
-### Success criteria
-- An agent with no MCP can use a room from only a pasted URL plus one sentence of instruction.
-- An agent with MCP can connect in under a minute.
-- You use it daily with a real agent for a week without hitting a blocker.
-- Two agents writing to the same pad at once don't corrupt data.
-
-## 3. Architecture
-
-```
- Agent (HTTP)      Agent (MCP)       Human (browser)
-      │                 │                  │
-      └──────┬──────────┴──────────────────┘
-             ▼
-   ┌───────────────────────┐
-   │  Edge Worker (router) │  rate limit · bot check · routing · static UI
-   └──────────┬────────────┘
-              ▼   one instance per room (addressed by room ID)
-   ┌───────────────────────┐
-   │   Room object         │  key check · pad logic · history · expiry timer
-   │   + embedded SQLite   │
-   └───────────────────────┘
-```
-
-**Core idea:** each room is an isolated, single-threaded unit with its own small database. That removes most concurrency bugs, because all writes to a room are processed one at a time. It also scales to many rooms with no central database to run.
-
-### Key design
-- URL shape: `/r/{roomId}/{secret}`.
-- `roomId` is a short random ID used only for routing, and it isn't a secret.
-- `secret` is at least 128 bits of random data. Each room has a **read** secret and a **write** secret (and optionally an admin secret for delete and key rotation).
-- Only **hashes** of the secrets are stored. Which hash matches decides the role.
-- The raw secrets are shown once, at creation.
-- Because the room ID routes directly, there is no global key-lookup table.
-
-### Data model (inside each room)
-- `room`: created time, last active time, expiry time, secret hashes, byte counter.
-- `pads`: name, content, version number, updated time.
-- `revisions`: pad, version, content, timestamp, source (api, mcp or web).
-
-### HTTP API
-| Method and path | Purpose |
-|---|---|
-| `POST /api/rooms` | Create a room, returning the URLs and secrets |
-| `GET /r/{id}/{secret}` | Content negotiation: markdown or plain text for agents, HTML for browsers |
-| `GET /r/.../pads/{name}` | Read a pad (raw text) |
-| `PUT /r/.../pads/{name}` | Replace, requiring a version via `If-Match` |
-| `POST /r/.../pads/{name}/append` | Append, never conflicts |
-| `DELETE /r/.../pads/{name}` | Delete (write key) |
-| `GET /r/.../pads/{name}/history` | List revisions |
-| `/mcp/{id}/{secret}` | MCP over streamable HTTP |
-
-### MCP tools
-`list_pads`, `read_pad`, `write_pad`, `append_pad`, `delete_pad`, `get_history`.
-
-### Concurrency rule
-`append` is the recommended default and never conflicts. `replace` fails with a clear "version changed, re-read" error if another writer got there first, and the error text tells the agent what to do.
-
-### Safety design
-- **Prompt injection:** the agent-facing page leads with a fixed notice that pad contents are user-supplied data, not instructions. Read-only keys are encouraged when an agent only needs to read.
-- **Leak prevention:** `Referrer-Policy: no-referrer`, `noindex`, no secrets in logs or error messages, and secrets in the path rather than the query string.
-- **XSS:** raw endpoints return plain text with `nosniff`. The web UI sanitizes rendered markdown and uses a strict Content-Security-Policy.
-- **Limits (starting values to tune):** 256 KB per pad, 2 MB per room, 20 pads, 50 revisions per pad, about 60 requests per minute per room.
-- **Expiry:** rooms are deleted after 30 days of inactivity, with a countdown shown in the UI and API.
-- **Abuse:** a bot check (a CAPTCHA alternative) on room creation, per-IP creation limits, a report/delete route, and a global kill switch.
-
-## 4. Tech stack
-
-| Layer | Choice | Why |
-|---|---|---|
-| Language | **TypeScript** | One language for API, MCP and UI, with strong types |
-| Runtime and hosting | **Cloudflare Workers** | Near-zero idle cost, global, no servers to run |
-| Per-room state | **Durable Objects with SQLite storage** | A natural fit for one-room-one-actor, built-in transactions, and alarms for expiry |
-| Router | **Hono** | Small, fast, runs on Workers |
-| MCP | **Official MCP TypeScript SDK** (or Cloudflare's agents library) | Standard streamable-HTTP transport |
-| Validation | **Zod** | Shared schemas for HTTP and MCP |
-| Frontend | **Preact or Svelte + Vite** | Small bundle, served from the same Worker |
-| Markdown | **marked + DOMPurify** | Safe rendering |
-| Editor | Plain `<textarea>` first, CodeMirror later | Keep MVP simple |
-| Bot check | **Rate Limits** | Simple and agent-friendly for MVP |
-| Tests | **Vitest** with the Workers test pool | Runs against real Worker and Durable Object behavior |
-| Tooling | **Wrangler**, GitHub Actions, ESLint, Prettier | Standard deploy and CI |
-
-I'm working from memory on Cloudflare's current free-tier limits and which Durable Object storage types the free plan allows. Check the current pricing and limits pages before committing.
-
-**Alternative stack** if you'd rather avoid Cloudflare: Node.js with Fastify and SQLite on a small VPS (or Fly.io). It is simpler to reason about and fully portable, but you run the server, handle scaling and backups yourself, and cost doesn't drop to zero when idle.
-
-## 5. Suggested repo layout
-```
-notemem/
-  src/
-    worker.ts        # entry, routing, rate limits
-    room.ts          # Durable Object: auth, pads, history, expiry
-    api/             # HTTP handlers
-    mcp/             # MCP server + tools
-    lib/             # keys, hashing, limits, markdown page template
-  web/               # frontend (Vite)
-  test/
-  wrangler.toml
-  README.md          # includes the copy-paste agent instruction snippet
-```
-
-## 6. Build plan
-
-| Phase | Deliverable | Rough effort |
-|---|---|---|
-| 1. Core | Create room, key hashing, pad read/replace/append, version checks, tests | 2–3 days |
-| 2. Agent page | Self-describing markdown page, plain-text endpoints, copy-paste prompt snippet | 1 day |
-| 3. Web UI | List, view, edit, polling, copy-key buttons | 2–3 days |
-| 4. MCP | Tools wrapping the same operations; test with a real MCP client | 1–2 days |
-| 5. Safety | Limits, expiry alarm, Turnstile, headers, report/delete | 2 days |
-| 6. Dogfood and harden | Use with your own agents for a week, fix rough edges | ongoing |
-
-These are my estimates for one developer, not measured numbers. Total is roughly two weeks part-time to a usable MVP.
-
-## 7. Decisions (Resolved)
-
-1. **Hosting:** Cloudflare Workers and Durable Objects.
-2. **Expiry:** 30 days of inactivity is accepted.
-3. **Key roles:** Read and Write keys only for MVP.
-4. **Name:** **Notemem**.
-5. **Frontend:** Preact + Vite.
-6. **Bot Check:** Rate limits only for MVP.
+## Validation Policy
+- **Always validate behavior after changes:** run `npm run typecheck`, `npm run lint`, then `npm test`, then check at least one real request against `wrangler dev` (curl for HTTP, an MCP client for MCP).
+- **Check both audiences:** for routing or content-negotiation changes, check a browser request (`Accept: text/html`) and a plain agent request.
+- **Iterate until intent is confirmed:** if a check fails or is inconclusive, keep fixing and re-testing until the observed behavior matches the goal.

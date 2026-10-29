@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "dompurify": "^3.4.16",
-    "lucide-preact": "^1.49.0",
     "marked": "^18.0.14",
     "preact": "^10.29.8",
     "wouter": "^3.13.0"
@@ -18,13 +17,11 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",
     "@tailwindcss/typography": "^0.5.20",
-    "@types/dompurify": "^3.0.5",
-    "@types/marked": "^5.0.2",
     "@types/node": "^24.13.3",
     "autoprefixer": "^10.6.1",
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.19",
-    "typescript": "~6.0.2",
+    "typescript": "^7.0.2",
     "vite": "^8.3.0"
   }
 }

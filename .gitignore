@@ -31,3 +31,6 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+
+# local MCP config (holds a live room secret)
+.mcp.json

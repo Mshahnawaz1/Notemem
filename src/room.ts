@@ -33,7 +33,9 @@ export class Room extends DurableObject {
       name: "notemem-room",
       version: "1.0.0"
     });
-    this.mcpTransport = new WebStandardStreamableHTTPServerTransport();
+    this.mcpTransport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID()
+    });
 
     // Register MCP tools
     this.mcpServer.tool("list_pads", "List all pads in the room", {}, async () => {
@@ -147,7 +149,15 @@ export class Room extends DurableObject {
 
     // Handle MCP endpoints
     this.app.all("/mcp/:roomId/:secret/*", async (c) => {
-      return this.mcpTransport.handleRequest(c.req.raw);
+      let parsedBody: unknown;
+      if (c.req.method === "POST") {
+        try {
+          parsedBody = await c.req.json();
+        } catch (e) {
+          // Body might be empty or invalid JSON, ignore or let transport handle it
+        }
+      }
+      return this.mcpTransport.handleRequest(c.req.raw, { parsedBody });
     });
 
 

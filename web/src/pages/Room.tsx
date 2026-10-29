@@ -17,7 +17,14 @@ export default function Room() {
   const [pads, setPads] = useState<PadMeta[]>([]);
   const [pad, setPad] = useState<Pad | null>(null);
   const [content, setContent] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditingState] = useState(false);
+  
+  const isEditingRef = useRef(false);
+  const setIsEditing = (val: boolean) => {
+    isEditingRef.current = val;
+    setIsEditingState(val);
+  };
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -46,7 +53,7 @@ export default function Room() {
       if (!background) setContent(data.content);
       // If we are currently editing and background poll sees a newer version, we might have a conflict!
       // For MVP, we just let the UI know or silently update if not editing.
-      if (background && !isEditing) {
+      if (background && !isEditingRef.current) {
         setContent(data.content);
       }
     } catch (e) {
