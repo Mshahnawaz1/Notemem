@@ -6,34 +6,33 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [joinUrl, setJoinUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCreate = async () => {
     setLoading(true);
+    setError(null);
     try {
       const { writeUrl } = await createRoom();
       setLocation(new URL(writeUrl).pathname);
     } catch {
-      alert('Failed to create room');
+      setError('Could not create a room. Please try again.');
       setLoading(false);
     }
   };
 
   const handleJoin = (e: Event) => {
     e.preventDefault();
+    setError(null);
+    let path = joinUrl.trim();
     try {
-      const url = new URL(joinUrl);
-      if (url.pathname.startsWith('/r/')) {
-        setLocation(url.pathname);
-      } else {
-        alert('Invalid room URL');
-      }
+      path = new URL(path).pathname;
     } catch {
-      // If it's just a path
-      if (joinUrl.startsWith('/r/')) {
-        setLocation(joinUrl);
-      } else {
-        alert('Invalid room URL');
-      }
+      // Not a full URL; it may be just the path.
+    }
+    if (path.startsWith('/r/')) {
+      setLocation(path);
+    } else {
+      setError('That doesn\'t look like a room URL. It should contain /r/{room}/{key}.');
     }
   };
 
@@ -71,6 +70,12 @@ export default function Home() {
             </button>
           </form>
         </div>
+
+        {error && (
+          <div role="alert" className="max-w-xl mx-auto bg-red-50 border border-red-200 text-red-900 text-sm rounded-lg px-4 py-3">
+            {error}
+          </div>
+        )}
       </div>
       
       <div className="grid md:grid-cols-3 gap-8 max-w-5xl w-full mt-32">
