@@ -15,8 +15,8 @@ Notemem is a free, no-signup shared workspace where a human and any AI agent rea
 - `wrangler.jsonc` configures the Worker, the `ROOM` Durable Object binding and SQLite migrations. `worker-configuration.d.ts` is generated; don't edit it by hand.
 
 ## Codebase Map
-- `src/index.ts` creates rooms (`POST /api/rooms`) and forwards `/r/{roomId}/*` and `/mcp/{roomId}/*` to the Durable Object addressed by `idFromName(roomId)`.
-- `src/room.ts` creates the SQLite schema, verifies secrets, serves the agent page, the pad routes and the MCP endpoint, and deletes the room from its alarm after 30 days of inactivity.
+- `src/index.ts` creates rooms (`POST /api/rooms`), serves browser navigations to the room URL and pad deep links as the SPA shell (from the `ASSETS` binding) with the agent page embedded, and forwards everything else under `/r/{roomId}/*` and `/mcp/{roomId}/*` to the Durable Object addressed by `idFromName(roomId)`.
+- `src/room.ts` creates the SQLite schema, verifies secrets, serves the agent page, the pad routes, the `/ws` live-update socket and the MCP endpoint, broadcasts `PadStore` change events to sockets, and deletes the room from its alarm after 30 days of inactivity.
 - The web UI talks to the same `/r/...` routes through `web/src/lib/api.ts`; in dev, `web/vite.config.ts` proxies `/api`, `/r` and `/mcp` to `localhost:8787`.
 
 ## Build, Test, and Development Commands
@@ -37,8 +37,8 @@ Notemem is a free, no-signup shared workspace where a human and any AI agent rea
 - Run the static checks first, in this order, and fix any failures before running tests:
   1. `npm run typecheck`: TypeScript `--noEmit` for the Worker (`src/`, `test/`) and for `web/`.
   2. `npm run lint`: ESLint with `typescript-eslint` and React hooks rules.
-- Then run `npm test` (Vitest with `@cloudflare/vitest-plugin`), which exercises the real Worker and Durable Object. Storage is wiped after each test (`test/setup.ts`).
-- Use the shared helpers in `test/helpers.ts` (`createRoom`, `call`, `putJson`, `postJson`).
+- Then run `npm test` (Vitest with `@cloudflare/vitest-plugin`), which exercises the real Worker and Durable Object. Storage is wiped after each test (`test/setup.ts`). The browser-detection tests read the SPA shell, so run `npm run build` first on a fresh checkout.
+- Use the shared helpers in `test/helpers.ts` (`createRoom`, `call`, `putJson`, `postJson`, `readPad`).
 - Each test creates its own room; don't rely on state left over from another test.
 - Every API rule (status codes, preconditions, roles, limits) needs a test. Concurrency changes need a concurrent-write test.
 - Check MCP changes with a real MCP client against `wrangler dev`, not only unit tests.
