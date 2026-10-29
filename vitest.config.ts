@@ -1,12 +1,10 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config'
+import { cloudflareTest } from '@cloudflare/vitest-plugin'
+import { defineConfig } from 'vitest/config'
 
-export default defineWorkersConfig({
+export default defineConfig({
+  plugins: [cloudflareTest({ wrangler: { configPath: './wrangler.jsonc' } })],
   test: {
-    poolOptions: {
-      workers: {
-        wrangler: { configPath: './wrangler.jsonc' },
-        isolatedStorage: false
-      },
-    },
+    // Wipes all storage after each test (replaces the old `isolatedStorage` option).
+    setupFiles: ['./test/setup.ts'],
   },
 })
