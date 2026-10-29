@@ -7,28 +7,36 @@ import { createMcpServer } from "./server";
 export type McpHandler = (request: Request, role: Role) => Promise<Response>;
 
 /**
- * One stateful server and transport per room (replaced by a per-request transport in Phase 3).
- * Until tools are registered per role, read keys are refused rather than given write tools.
+ * Stateless Streamable HTTP: every POST gets its own server and transport, so any number of
+ * clients can share a room and nothing is lost when the Durable Object is evicted.
  */
 export function createMcpHandler(store: PadStore): McpHandler {
-  const server = createMcpServer(store);
-  const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: () => crypto.randomUUID() });
-  // The transport needs no async setup; connect() only wires up handlers.
-  void server.connect(transport);
-
   return async (request, role) => {
-    if (role !== "write") {
+    // Without sessions there is no server-to-client stream to open (GET) or session to end (DELETE).
+    // An open GET stream would also keep the Durable Object awake.
+    if (request.method !== "POST") {
       await discardBody(request);
-      return Response.json({ error: "MCP needs the room's write URL for now; read-only MCP is not available yet." }, { status: 403 });
+      return Response.json(
+        { jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed. This MCP server is stateless; send JSON-RPC over POST." }, id: null },
+        { status: 405, headers: { Allow: "POST" } }
+      );
     }
+
     let parsedBody: unknown;
-    if (request.method === "POST") {
-      try {
-        parsedBody = await request.clone().json();
-      } catch {
-        // Empty or invalid JSON; the transport reports it.
-      }
+    try {
+      parsedBody = await request.clone().json();
+    } catch {
+      // Empty or invalid JSON; the transport reports it as a parse error.
     }
-    return transport.handleRequest(request, { parsedBody });
+
+    const server = createMcpServer(store, role);
+    const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+    await server.connect(transport);
+    try {
+      return await transport.handleRequest(request, { parsedBody });
+    } finally {
+      // With JSON responses the reply is complete once handleRequest resolves.
+      await server.close();
+    }
   };
 }
