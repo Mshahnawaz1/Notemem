@@ -81,7 +81,7 @@ Keep MCP config files with live room URLs out of git (`.mcp.json` is already in 
 
 ## Limits
 
-256 KB per pad, 20 pads per room. Rooms are deleted after 30 days of inactivity.
+256 KB per pad, 20 pads per room. Rooms are deleted after 30 days without a change to any pad; reading doesn't keep a room alive.
 
 ## Development
 

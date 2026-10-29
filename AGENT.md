@@ -16,7 +16,8 @@ Notemem is a free, no-signup shared workspace where a human and any AI agent rea
 
 ## Codebase Map
 - `src/index.ts` creates rooms (`POST /api/rooms`), serves browser navigations to the room URL and pad deep links as the SPA shell (from the `ASSETS` binding) with the agent page embedded, and forwards everything else under `/r/{roomId}/*` and `/mcp/{roomId}/*` to the Durable Object addressed by `idFromName(roomId)`.
-- `src/room.ts` creates the SQLite schema, verifies secrets, serves the agent page, the pad routes, the `/ws` live-update socket and the MCP endpoint, broadcasts `PadStore` change events to sockets, and deletes the room from its alarm after 30 days of inactivity.
+- `src/room.ts` creates the SQLite schema in `init` (rooms `POST /api/rooms` never created return 404 and store nothing), serves the agent page, the pad routes, the `/ws` live-update socket and the MCP endpoint, broadcasts `PadStore` change events to sockets, extends `expires_at` on committed writes (`src/lib/expiry.ts`), and deletes the room from its alarm.
+- `src/index.ts` wraps every Worker response in `withSecurityHeaders` (`src/lib/headers.ts`); static assets get the same headers from `web/public/_headers`.
 - The web UI talks to the same `/r/...` routes through `web/src/lib/api.ts`; in dev, `web/vite.config.ts` proxies `/api`, `/r` and `/mcp` to `localhost:8787`.
 
 ## Build, Test, and Development Commands
