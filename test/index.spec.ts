@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { call, createRoom, postJson, putJson } from './helpers'
+import { call, createRoom, postJson, putJson, readPad } from './helpers'
 
 interface WriteResult { success: boolean; version: number }
-interface PadJson { name: string; content: string; version: number }
 
 describe('Notemem worker', () => {
   it('creates a room', async () => {
@@ -27,9 +26,7 @@ describe('Notemem worker', () => {
   it('can read a pad', async () => {
     const room = await createRoom()
     await putJson(`${room.base}/pads/mypad`, { content: 'Hello World' })
-    const response = await call(`${room.base}/pads/mypad`)
-    expect(response.status).toBe(200)
-    const data = await response.json<PadJson>()
+    const data = await readPad(`${room.base}/pads/mypad`)
     expect(data.content).toBe('Hello World')
     expect(data.version).toBe(1)
   })
@@ -48,9 +45,7 @@ describe('Notemem worker', () => {
     const room = await createRoom()
     await putJson(`${room.base}/pads/mypad`, { content: 'Hello World' })
     await postJson(`${room.base}/pads/mypad/append`, { text: '!' })
-    const response = await call(`${room.base}/pads/mypad`)
-    expect(response.status).toBe(200)
-    const data = await response.json<PadJson>()
+    const data = await readPad(`${room.base}/pads/mypad`)
     expect(data.content).toBe('Hello World!')
     expect(data.version).toBe(2)
   })
@@ -78,7 +73,6 @@ describe('Notemem worker', () => {
 
   it('handles concurrent creates and appends', async () => {
     const room = await createRoom()
-    // Create pad first so appends don't 404
     await putJson(`${room.base}/pads/concurrent`, { content: 'A' })
 
     // Now send appends concurrently
@@ -89,7 +83,7 @@ describe('Notemem worker', () => {
     expect(res2.status).toBe(200)
     expect(res3.status).toBe(200)
 
-    const data = await (await call(`${room.base}/pads/concurrent`)).json<PadJson>()
+    const data = await readPad(`${room.base}/pads/concurrent`)
     expect(data.content.length).toBe(3) // A + B + C
     expect(data.content).toContain('B')
     expect(data.content).toContain('C')

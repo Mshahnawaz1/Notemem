@@ -2,7 +2,7 @@ import { env, runInDurableObject } from 'cloudflare:test'
 import { describe, it, expect } from 'vitest'
 import { DEFAULT_LIMITS, PadStore } from '../src/lib/pads'
 import type { PadLimits } from '../src/lib/pads'
-import { call, createRoom, postJson, putJson } from './helpers'
+import { call, createRoom, postJson, putJson, readPad } from './helpers'
 
 interface StoredRevision extends Record<string, SqlStorageValue> {
   pad_name: string
@@ -78,7 +78,7 @@ describe('revision history', () => {
   it('trims oldest revisions room-wide to the history budget but keeps each pad latest', async () => {
     await withStore({ maxHistoryBytes: 25 }, (store, sql) => {
       store.replace('old', '0123456789', 'api') // 10 bytes, oldest
-      store.replace('old', 'abcdefghij', 'api') // 20
+      store.replace('old', 'abcdefghij', 'api', 1) // 20
       store.replace('new', 'ABCDEFGHIJ', 'api') // 30 -> drops old v1
       expect(store.history('old').map((r) => r.version)).toEqual([2])
       expect(store.history('new').map((r) => r.version)).toEqual([1])
@@ -106,7 +106,7 @@ describe('revision history', () => {
     await withStore({ maxHistoryBytes: 30 }, (store, sql) => {
       store.replace('a', 'base', 'api') // 4
       for (let i = 1; i <= 5; i++) store.append('a', `+${i}`, 'api') // 14
-      store.replace('a', 'fresh', 'api') // 19
+      store.replace('a', 'fresh', 'api', 6) // 19
       store.append('a', '!', 'api') // 20
       store.replace('b', 'x'.repeat(12), 'api') // 32 -> drops a's first segment (14 bytes)
 
@@ -162,7 +162,7 @@ describe('revision history', () => {
     // Restoring is a replace with the old content.
     const restore = await putJson(`${room.base}/pads/log`, { content: oldest.content }, { 'If-Match': '55' })
     expect(restore.status).toBe(200)
-    const pad = await (await call(`${room.base}/pads/log`)).json<{ content: string; version: number }>()
+    const pad = await readPad(`${room.base}/pads/log`)
     expect(pad).toMatchObject({ content: oldest.content, version: 56 })
   })
 
@@ -178,7 +178,7 @@ describe('revision history', () => {
     expect(statuses.slice(20).filter((s) => s === 200).length).toBeLessThanOrEqual(1)
     expect(statuses.slice(20).every((s) => s === 200 || s === 409)).toBe(true)
 
-    const pad = await (await call(`${room.base}/pads/c`)).json<{ content: string; version: number }>()
+    const pad = await readPad(`${room.base}/pads/c`)
     const winners = statuses.filter((s) => s === 200).length
     expect(pad.version).toBe(1 + winners)
     const { revisions } = await (await call(`${room.base}/pads/c/history`)).json<{ revisions: { version: number }[] }>()

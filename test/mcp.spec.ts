@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
-import { call, createRoom, putJson } from './helpers'
+import { call, createRoom, putJson, readPad } from './helpers'
 
 const READ_TOOLS = ['get_history', 'list_pads', 'read_pad']
 const WRITE_TOOLS = ['append_pad', 'delete_pad', 'get_history', 'list_pads', 'read_pad', 'write_pad']
@@ -59,7 +59,7 @@ describe('MCP', () => {
     const client = await connect(room.roomId, room.writeSecret)
     expect((await callTool(client, 'write_pad', { name: 'log', content: 'a' })).text).toContain('New version: 1')
     expect((await callTool(client, 'append_pad', { name: 'log', text: 'b' })).text).toContain('New version: 2')
-    const pad = await (await call(`${room.base}/pads/log`)).json<{ content: string; version: number }>()
+    const pad = await readPad(`${room.base}/pads/log`)
     expect(pad).toMatchObject({ content: 'ab', version: 2 })
     const history = await (await call(`${room.base}/pads/log/history`)).json<{ revisions: { source: string }[] }>()
     expect(history.revisions.map((r) => r.source)).toEqual(['mcp', 'mcp'])
@@ -96,7 +96,37 @@ describe('MCP', () => {
       expect(result.isError).toBe(true)
       expect(result.text).toContain('list_pads')
     }
-    expect((await callTool(client, 'append_pad', { name: 'missing', text: 'x' })).text).toContain('write_pad')
+    await client.close()
+  })
+
+  it('creates a missing pad on append_pad', async () => {
+    const room = await createRoom()
+    const client = await connect(room.roomId, room.writeSecret)
+    const result = await callTool(client, 'append_pad', { name: 'new', text: 'x' })
+    expect(result).toMatchObject({ isError: false })
+    expect(result.text).toContain('New version: 1')
+    expect((await callTool(client, 'read_pad', { name: 'new' })).text).toMatch(/^version: 1\nupdated_at: .+\n---\nx$/)
+    await client.close()
+  })
+
+  it('refuses to replace an existing pad without ifMatch', async () => {
+    const room = await createRoom()
+    const client = await connect(room.roomId, room.writeSecret)
+    await callTool(client, 'write_pad', { name: 'p', content: 'original' })
+    const blind = await callTool(client, 'write_pad', { name: 'p', content: 'overwrite' })
+    expect(blind.isError).toBe(true)
+    expect(blind.text).toContain('Call read_pad')
+    expect(blind.text).toContain('ifMatch')
+    expect((await readPad(`${room.base}/pads/p`)).content).toBe('original')
+    await client.close()
+  })
+
+  it('reports a conflict when ifMatch names a pad that no longer exists', async () => {
+    const room = await createRoom()
+    const client = await connect(room.roomId, room.writeSecret)
+    const result = await callTool(client, 'write_pad', { name: 'gone', content: 'x', ifMatch: 1 })
+    expect(result.isError).toBe(true)
+    expect(result.text).toContain('no longer exists')
     await client.close()
   })
 
