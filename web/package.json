@@ -12,6 +12,7 @@
     "dompurify": "^3.4.16",
     "marked": "^18.0.14",
     "preact": "^10.29.8",
+    "preact-render-to-string": "^6.8.2",
     "wouter": "^3.13.0"
   },
   "devDependencies": {
