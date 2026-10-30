@@ -113,3 +113,28 @@ describe('agent page', () => {
     expect(page).toContain(`\`http://example.com/mcp/${room.roomId}/${room.readSecret}\``)
   })
 })
+
+describe('public pages', () => {
+  it('serves the 404 page to a browser on an unknown path, and plain text to agents', async () => {
+    const browser = await call('/no-such-page', { headers: BROWSER })
+    expect(browser.status).toBe(404)
+    expect(browser.headers.get('Content-Type')).toMatch(/^text\/html/)
+    expect(browser.headers.get('X-Robots-Tag')).toBe('noindex')
+    const html = await browser.text()
+    expect(html).toContain('Page not found | Notemem')
+    expect(html).toContain('Error 404')
+
+    const agent = await call('/no-such-page')
+    expect(agent.status).toBe(404)
+    expect(agent.headers.get('Content-Type')).toMatch(/^text\/plain/)
+  })
+
+  it('strips the home page SEO tags from the shell served for a room', async () => {
+    const room = await createRoom()
+    const html = await (await call(room.base, { headers: BROWSER })).text()
+    expect(html).toContain('<title>Notemem room</title>')
+    expect(html).not.toContain('data-seo')
+    expect(html).not.toContain('rel="canonical"')
+    expect(html).not.toContain('application/ld+json')
+  })
+})

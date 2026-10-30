@@ -1,7 +1,13 @@
 # Applied by Workers static assets to files served without running the Worker.
-# Keep in sync with src/lib/headers.ts.
+# Keep in sync with src/lib/headers.ts. The public pages are indexable, so unlike Worker
+# responses they don't get X-Robots-Tag: noindex; the error pages do.
 /*
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
-  X-Robots-Tag: noindex
   Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+/404
+  X-Robots-Tag: noindex
+
+/500
+  X-Robots-Tag: noindex

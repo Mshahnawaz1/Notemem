@@ -1,0 +1,8 @@
+# Rooms, the API and MCP endpoints are private; only the public pages are crawlable.
+User-agent: *
+Allow: /
+Disallow: /r/
+Disallow: /mcp/
+Disallow: /api/
+
+Sitemap: https://notemem.mshahnawaz.me/sitemap.xml

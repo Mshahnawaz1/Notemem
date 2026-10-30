@@ -82,6 +82,18 @@ async function browserPage(c: Context<{ Bindings: CloudflareBindings }>, roomId:
         element.setInnerContent(`<pre>${escapeHtml(markdown)}</pre>`, { html: true })
       },
     })
+    // The shell is the prerendered home page; its title, description, canonical URL and structured
+    // data don't describe a room.
+    .on('head [data-seo]', {
+      element(element) {
+        element.remove()
+      },
+    })
+    .on('head title', {
+      element(element) {
+        element.setInnerContent('Notemem room')
+      },
+    })
     .transform(shell)
   const headers = new Headers(page.headers)
   headers.set('Cache-Control', 'no-store')
@@ -106,9 +118,30 @@ app.all('/mcp/:roomId/*', async (c) => {
   return roomStub(c.env, c.req.param('roomId')).fetch(c.req.raw)
 })
 
+/** The prerendered 404 or 500 page from the assets, with that status. */
+async function errorPage(c: Context<{ Bindings: CloudflareBindings }>, status: 404 | 500): Promise<Response | null> {
+  const page = await c.env.ASSETS.fetch(new URL(`/${status}`, c.req.url))
+  if (!page.ok) return null
+  const headers = new Headers(page.headers)
+  headers.set('Cache-Control', 'no-store')
+  return new Response(page.body, { status, headers })
+}
+
+app.notFound(async (c) => {
+  if (c.req.method === 'GET' && isBrowserNavigation(c.req.raw)) {
+    const page = await errorPage(c, 404)
+    if (page) return page
+  }
+  return c.text('404 Not Found', 404)
+})
+
 // Hono's default handler logs the whole error, whose text can quote the URL and its secret.
-app.onError((error, c) => {
+app.onError(async (error, c) => {
   console.error(JSON.stringify({ error: redactSecrets(error.message) }))
+  if (c.req.method === 'GET' && isBrowserNavigation(c.req.raw)) {
+    const page = await errorPage(c, 500).catch(() => null)
+    if (page) return page
+  }
   return c.json({ error: 'Internal error' }, 500)
 })
 
