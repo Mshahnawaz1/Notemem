@@ -1,14 +1,13 @@
 import { Link } from 'wouter';
 import { GITHUB_URL } from '../lib/site';
 
-/** A note with a folded corner; the two lines stand for the human and the agent writing to it. */
+/** A square "n" with a lime cursor after it: a note being written to, by a person or an agent. */
 export function LogoMark({ className = 'w-6 h-6', inverted = false }: { className?: string; inverted?: boolean }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <path d="M5 3h15l7 7v19H5z" fill={inverted ? '#F8F6F1' : '#0F2A23'} />
-      <path d="M20 3v7h7z" fill="#C1E05A" />
-      <rect x="9" y="15" width="12" height="2.5" fill={inverted ? '#0F2A23' : '#F8F6F1'} />
-      <rect x="9" y="21" width="8" height="2.5" fill="#C1E05A" />
+      <rect x="3" y="3" width="26" height="26" fill={inverted ? '#F8F6F1' : '#0F2A23'} />
+      <path d="M7 10h11v12h-3.5v-8.5h-4V22H7z" fill={inverted ? '#0F2A23' : '#F8F6F1'} />
+      <rect x="20" y="19" width="5" height="3" fill="#C1E05A" />
     </svg>
   );
 }
