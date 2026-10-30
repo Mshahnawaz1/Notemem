@@ -98,3 +98,32 @@
     @apply mr-2 my-0 accent-ink;
   }
 }
+
+@layer components {
+  /* Text pages (about, legal, contact). */
+  .doc-prose {
+    @apply text-[15px] sm:text-base leading-relaxed text-ink-soft;
+  }
+  .doc-prose > * + * {
+    @apply mt-4;
+  }
+  .doc-prose h2 {
+    @apply mt-10 font-display text-xl sm:text-[1.4rem] font-semibold tracking-tight text-ink;
+  }
+  .doc-prose .not-prose h2 {
+    @apply mt-0 text-base;
+  }
+  .doc-prose ul {
+    @apply list-disc pl-5 space-y-2 marker:text-ink-faint;
+  }
+  .doc-prose strong {
+    @apply font-semibold text-ink;
+  }
+  .doc-prose a:not(.btn-secondary) {
+    @apply text-ink underline decoration-brand decoration-2 underline-offset-2 hover:decoration-ink;
+  }
+  /* FAQ disclosure: hide the default marker; the + icon rotates instead. */
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+}

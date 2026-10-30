@@ -1,6 +1,5 @@
 import { Link } from 'wouter';
-
-export const GITHUB_URL = 'https://github.com/Mshahnawaz1/Notemem';
+import { GITHUB_URL } from '../lib/site';
 
 /** A note with a folded corner; the two lines stand for the human and the agent writing to it. */
 export function LogoMark({ className = 'w-6 h-6', inverted = false }: { className?: string; inverted?: boolean }) {
