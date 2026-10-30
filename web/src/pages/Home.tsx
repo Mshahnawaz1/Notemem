@@ -1,8 +1,10 @@
 import { useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import { useLocation } from 'wouter';
-import { createRoom } from '../lib/api';
-import { GITHUB_URL, GitHubIcon, LogoMark, Navbar } from '../components/Brand';
+import { PageLayout } from '../components/Layout';
+import { FAQ } from '../lib/faq';
+import { SITE_URL } from '../lib/site';
+import { useCreateRoom } from '../lib/useCreateRoom';
 
 const STEPS = [
   {
@@ -27,7 +29,7 @@ const FACTS = [
   { title: 'Only hashes are stored', body: 'Keys never reach logs, error messages or query strings.' },
   { title: 'Versioned writes', body: 'Replacing a pad needs the version you read, so a stale write fails instead of overwriting someone else.' },
   { title: 'Rooms expire', body: 'A room is deleted after 30 days without a change. Any write resets the clock.' },
-  { title: 'Not indexed', body: 'Every page is served with noindex and no referrer.' },
+  { title: 'Rooms are not indexed', body: 'Room pages and API responses are served with noindex and no referrer.' },
   { title: 'Content is data', body: 'Agents are told up front that pad contents are untrusted user data, not instructions.' },
 ];
 
@@ -83,103 +85,77 @@ function CodeBlock({ door, origin }: { door: Door; origin: string }) {
   );
 }
 
-const FOOTER_LINKS = [
+const ABOUT = [
   {
-    heading: 'Product',
-    links: [
-      { label: 'How it works', href: '#how-it-works' },
-      { label: 'HTTP and MCP', href: '#agents' },
-      { label: 'Safety', href: '#safety' },
-    ],
+    title: 'Why agents need a shared place to write',
+    body: 'AI coding agents are good at long tasks, but their memory ends with the session. When a cloud agent finishes a research step and a local coding agent has to continue, or when you want to check progress from your phone, there is usually no common place to put the work. Copying text between chat windows loses context, and a file on one machine is invisible to an agent running somewhere else. Notemem gives every participant the same notes through a URL, so a plan written by one agent can be picked up by another, reviewed by a person and updated again, wherever each of them runs.',
   },
   {
-    heading: 'Project',
-    links: [
-      { label: 'Source code', href: GITHUB_URL },
-      { label: 'Agent quickstart', href: `${GITHUB_URL}#readme` },
-      { label: 'Report an issue', href: `${GITHUB_URL}/issues` },
-    ],
+    title: 'Works with any agent: plain HTTP or MCP',
+    body: 'Any agent that can make a web request can use a room. A GET request on the room URL returns a short markdown page that explains the API, so you can paste the URL into a prompt with one sentence of instruction and the agent works out the rest. Pads are read as plain text, appended with a POST and replaced with a PUT. Agents with Model Context Protocol support, such as Claude Code, Cursor, Codex and other MCP clients, can add the room as a remote MCP server and get six tools for listing, reading, writing, appending, deleting and viewing history. Chat assistants that can only fetch pages can still read a room.',
+  },
+  {
+    title: 'Safe concurrent edits',
+    body: 'When several agents write to the same notes, the usual failure is a silent overwrite: one agent saves an old copy over another agent\'s work. Notemem prevents it with versioned writes. Replacing a pad requires the version number you last read, sent as an If-Match header or an MCP argument, and a stale write is rejected with a clear message telling the agent to re-read and try again. Appending never conflicts, which makes it the right choice for logs and checklists. Every revision is kept in the pad\'s history, up to 50 per pad, so earlier text can be restored.',
+  },
+  {
+    title: 'Private by URL, with read-only sharing',
+    body: 'Each room has two keys: a write URL for you and your trusted agents, and a read-only URL you can share for review. Only hashes of the keys are stored, keys never appear in logs, and room pages are served with noindex and no referrer, so they stay out of search engines and analytics. Agents are told up front that pad contents are user data, not instructions, which helps against prompt injection through shared notes. Rooms are temporary by design: a room is deleted after 30 days without a change, and any write resets the clock.',
   },
 ];
 
-function Footer({ onCreate, creating }: { onCreate: () => void; creating: boolean }) {
+function AboutTool() {
   return (
-    <footer className="ruled-dark relative overflow-hidden bg-ink text-paper">
-      <div aria-hidden="true" className="wordmark-faint hidden md:block absolute right-8 -bottom-[0.2em] font-display font-semibold tracking-tight leading-none text-[11rem] select-none whitespace-nowrap">
-        notemem
+    <section id="about-notemem" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem]">
+      <SectionHeading eyebrow="About the tool" title="A shared notebook for humans and AI agents.">
+        Notemem is a free shared workspace where you and any AI agent read and write the same notes. You open a room with one click, and its private URL is all anyone needs: no accounts, no API keys to register and no SDK to install. A room holds up to 20 markdown pads, such as a plan, a task list, a decision log or a handoff note, and every change is versioned.
+      </SectionHeading>
+      <div className="ticks mt-10 grid md:grid-cols-2 gap-px bg-line border border-line">
+        {ABOUT.map(item => (
+          <div key={item.title} className="bg-white p-6 sm:p-7">
+            <h3 className="font-display text-[17px] font-semibold text-ink">{item.title}</h3>
+            <p className="mt-2 text-sm text-ink-soft leading-relaxed">{item.body}</p>
+          </div>
+        ))}
       </div>
-      <div className="relative px-4 sm:px-8 pt-10 pb-6">
-        <div className="grid gap-8 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <div className="max-w-sm">
-            <a href="/" className="flex items-center gap-2 text-paper" aria-label="Notemem home">
-              <LogoMark className="w-5 h-5" inverted />
-              <span className="font-display text-lg font-semibold tracking-tight">notemem</span>
-            </a>
-            <p className="mt-3 text-sm leading-relaxed text-paper/60">
-              A shared notebook for people and AI agents. Open a room, hand over the URL, and read the same pads from anywhere.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              <button onClick={onCreate} disabled={creating} className="btn-primary h-9 px-4 text-xs">
-                {creating ? 'Creating…' : 'Create a room'} {!creating && <span aria-hidden="true">→</span>}
-              </button>
-              <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="btn h-9 px-4 text-xs border-paper/25 text-paper hover:bg-paper/10">
-                <GitHubIcon className="w-3.5 h-3.5" /> Star on GitHub
-              </a>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-8">
-            {FOOTER_LINKS.map(col => (
-              <div key={col.heading}>
-                <div className="label text-[11px] text-brand">{col.heading}</div>
-                <ul className="mt-3 space-y-2 text-sm">
-                  {col.links.map(link => {
-                    const external = link.href.startsWith('http');
-                    return (
-                      <li key={link.label}>
-                        <a
-                          href={link.href}
-                          {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                          className="text-paper/70 hover:text-paper transition-colors"
-                        >
-                          {link.label}
-                        </a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="mt-10 grid gap-4 lg:grid-cols-2 lg:gap-12">
+        <h3 className="font-display text-[17px] font-semibold text-ink">What people use it for</h3>
+        <p className="text-sm sm:text-base text-ink-soft leading-relaxed">
+          Common uses include handing a plan from a planning agent to a coding agent, keeping a task list that several agents tick off, collecting research notes from a cloud agent to read on your phone, leaving instructions for an agent that runs on a schedule, and giving a reviewer read-only access to an agent's progress log. The web view updates live, so you can watch an agent work and step in by editing the same pad. Notemem is open source and free: create a room, hand the URL to your agent, and work from the same page.
+        </p>
+      </div>
+    </section>
+  );
+}
 
-        <div className="mt-8 pt-4 border-t border-paper/15 flex flex-col sm:flex-row gap-2 sm:items-center justify-between label text-[10px] text-paper/50">
-          <span>© {new Date().getFullYear()} Notemem</span>
-          <span>Idle rooms are deleted after 30 days</span>
-        </div>
+function Faq() {
+  return (
+    <section id="faq" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem] grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-10 items-start">
+      <SectionHeading stacked eyebrow="FAQ" title="Questions, answered.">
+        Can't find what you need? Open an issue on GitHub or see the contact page.
+      </SectionHeading>
+      <div className="ticks border border-line bg-white divide-y divide-line">
+        {FAQ.map(item => (
+          <details key={item.q} className="faq group">
+            <summary className="flex items-start justify-between gap-4 cursor-pointer list-none px-5 py-4 font-display text-[15px] sm:text-base font-semibold text-ink hover:bg-paper">
+              <span>{item.q}</span>
+              <span aria-hidden="true" className="font-mono text-ink-faint group-open:rotate-45 transition-transform">+</span>
+            </summary>
+            <p className="px-5 pb-5 -mt-1 text-sm text-ink-soft leading-relaxed">{item.a}</p>
+          </details>
+        ))}
       </div>
-    </footer>
+    </section>
   );
 }
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [joinUrl, setJoinUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { create: handleCreate, creating: loading, error, setError } = useCreateRoom();
   const [door, setDoor] = useState<Door>('http');
-  const origin = window.location.origin;
-
-  const handleCreate = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { writeUrl } = await createRoom();
-      setLocation(new URL(writeUrl).pathname);
-    } catch {
-      setError('Could not create a room. Please try again.');
-      setLoading(false);
-    }
-  };
+  // Prerendering runs without a window.
+  const origin = typeof window === 'undefined' ? SITE_URL : window.location.origin;
 
   const handleJoin = (e: Event) => {
     e.preventDefault();
@@ -198,120 +174,116 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen ruled">
-      <div className="max-w-[1080px] mx-auto border-x border-line min-h-screen flex flex-col">
-        <Navbar />
+    <PageLayout>
+      {/* Hero */}
+      <section className="px-4 pt-14 sm:pt-20 pb-16 text-center">
+        <div className="inline-flex items-center gap-3 border border-dashed border-line-strong bg-paper/80 p-1 pr-3 text-[13px] text-ink-soft">
+          <span className="label bg-white border border-line px-1.5 py-0.5 text-ink text-[10px]">Free</span>
+          <span>No accounts. No SDK.<span className="hidden sm:inline"> The URL is the key.</span></span>
+        </div>
 
-        <main className="flex-1">
-          {/* Hero */}
-          <section className="px-4 pt-14 sm:pt-20 pb-16 text-center">
-            <div className="inline-flex items-center gap-3 border border-dashed border-line-strong bg-paper/80 p-1 pr-3 text-[13px] text-ink-soft">
-              <span className="label bg-white border border-line px-1.5 py-0.5 text-ink text-[10px]">Free</span>
-              <span>No accounts. No SDK.<span className="hidden sm:inline"> The URL is the key.</span></span>
+        <h1 className="mt-8 font-display font-semibold tracking-tight leading-[1.04] text-[2.1rem] sm:text-5xl lg:text-[3.8rem] text-ink">
+          Shared notes for you
+          <br />
+          <span className="text-ink-soft">and your AI agents.</span>
+        </h1>
+        <p className="mt-5 max-w-xl mx-auto text-base sm:text-lg leading-relaxed text-ink-soft">
+          A cloud agent leaves a plan, a local coding agent picks it up, and you check progress from your phone. Everyone reads and writes the same pads over plain HTTP or MCP.
+        </p>
+
+        <div className="mt-9 max-w-md mx-auto flex flex-col gap-2.5">
+          <button onClick={() => void handleCreate()} disabled={loading} className="btn-primary h-11 w-full">
+            {loading ? 'Creating room…' : 'Create a room'}
+            {!loading && <span aria-hidden="true">→</span>}
+          </button>
+          <form onSubmit={handleJoin} className="flex">
+            <input
+              type="text"
+              placeholder="Paste a room URL to join"
+              aria-label="Room URL"
+              value={joinUrl}
+              onInput={(e) => setJoinUrl(e.currentTarget.value)}
+              className="field flex-1 min-w-0 h-11 px-3.5 font-mono text-[13px] border-r-0"
+            />
+            <button type="submit" className="btn-secondary h-11 px-5 sm:px-6">Join</button>
+          </form>
+          {error && (
+            <div role="alert" className="text-left bg-red-50 border border-red-200 text-red-900 text-sm px-4 py-3">
+              {error}
             </div>
+          )}
+        </div>
+      </section>
 
-            <h1 className="mt-8 font-display font-semibold tracking-tight leading-[1.04] text-[2.1rem] sm:text-5xl lg:text-[3.8rem] text-ink">
-              Shared notes for you
-              <br />
-              <span className="text-ink-soft">and your AI agents.</span>
-            </h1>
-            <p className="mt-5 max-w-xl mx-auto text-base sm:text-lg leading-relaxed text-ink-soft">
-              A cloud agent leaves a plan, a local coding agent picks it up, and you check progress from your phone. Everyone reads and writes the same pads over plain HTTP or MCP.
-            </p>
+      {/* How it works */}
+      <section id="how-it-works" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem]">
+        <SectionHeading eyebrow="How it works" title="Three steps, no setup.">
+          Rooms are disposable workspaces. Make one for a task, share it with whatever needs it, and let it expire when you're done.
+        </SectionHeading>
+        <div className="ticks mt-10 grid md:grid-cols-3 border border-line bg-white">
+          {STEPS.map((step, i) => (
+            <div key={step.n} className={`p-6 ${i > 0 ? 'border-t md:border-t-0 md:border-l border-line' : ''}`}>
+              <div className="font-mono text-xs text-ink-faint">{step.n} <span className="text-line-strong">/ 03</span></div>
+              <h3 className="mt-5 font-display text-[17px] font-semibold text-ink">{step.title}</h3>
+              <p className="mt-2 text-sm text-ink-soft leading-relaxed">{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-            <div className="mt-9 max-w-md mx-auto flex flex-col gap-2.5">
-              <button onClick={() => void handleCreate()} disabled={loading} className="btn-primary h-11 w-full">
-                {loading ? 'Creating room…' : 'Create a room'}
-                {!loading && <span aria-hidden="true">→</span>}
+      {/* HTTP and MCP */}
+      <section id="agents" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem] grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-10 items-start">
+        <SectionHeading stacked eyebrow="For agents" title="Plain HTTP or MCP. Same room.">
+          Any agent that can make a request can use a room. Agents with MCP support get six tools instead. Both talk to the same pads, so you can mix them freely.
+        </SectionHeading>
+        <div className="ticks border border-line bg-white min-w-0">
+          <div className="flex border-b border-line" role="tablist">
+            {(['http', 'mcp'] as const).map(d => (
+              <button
+                key={d}
+                role="tab"
+                aria-selected={door === d}
+                onClick={() => setDoor(d)}
+                className={`label text-[11px] px-4 py-2.5 border-r border-line transition-colors ${door === d ? 'bg-mist text-ink' : 'text-ink-soft hover:text-ink'}`}
+              >
+                {d === 'http' ? 'HTTP' : 'MCP'}
               </button>
-              <form onSubmit={handleJoin} className="flex">
-                <input
-                  type="text"
-                  placeholder="Paste a room URL to join"
-                  aria-label="Room URL"
-                  value={joinUrl}
-                  onInput={(e) => setJoinUrl(e.currentTarget.value)}
-                  className="field flex-1 min-w-0 h-11 px-3.5 font-mono text-[13px] border-r-0"
-                />
-                <button type="submit" className="btn-secondary h-11 px-5 sm:px-6">Join</button>
-              </form>
-              {error && (
-                <div role="alert" className="text-left bg-red-50 border border-red-200 text-red-900 text-sm px-4 py-3">
-                  {error}
-                </div>
-              )}
+            ))}
+          </div>
+          <CodeBlock door={door} origin={origin} />
+        </div>
+      </section>
+
+      {/* Safety */}
+      <section id="safety" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem]">
+        <SectionHeading eyebrow="Safe by default" title="Private by URL, careful by design.">
+          There are no accounts to lose, so the keys and the limits do the work.
+        </SectionHeading>
+        <dl className="ticks mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-line border border-line">
+          {FACTS.map(fact => (
+            <div key={fact.title} className="bg-paper p-6">
+              <dt className="font-display text-base font-semibold text-ink">{fact.title}</dt>
+              <dd className="mt-1.5 text-sm text-ink-soft leading-relaxed">{fact.body}</dd>
             </div>
-          </section>
+          ))}
+        </dl>
+      </section>
 
-          {/* How it works */}
-          <section id="how-it-works" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem]">
-            <SectionHeading eyebrow="How it works" title="Three steps, no setup.">
-              Rooms are disposable workspaces. Make one for a task, share it with whatever needs it, and let it expire when you're done.
-            </SectionHeading>
-            <div className="ticks mt-10 grid md:grid-cols-3 border border-line bg-white">
-              {STEPS.map((step, i) => (
-                <div key={step.n} className={`p-6 ${i > 0 ? 'border-t md:border-t-0 md:border-l border-line' : ''}`}>
-                  <div className="font-mono text-xs text-ink-faint">{step.n} <span className="text-line-strong">/ 03</span></div>
-                  <h3 className="mt-5 font-display text-[17px] font-semibold text-ink">{step.title}</h3>
-                  <p className="mt-2 text-sm text-ink-soft leading-relaxed">{step.body}</p>
-                </div>
-              ))}
+      {/* Limits */}
+      <section className="border-t border-line">
+        <dl className="grid grid-cols-2 lg:grid-cols-4">
+          {LIMITS.map((limit, i) => (
+            <div key={limit.unit} className={`px-5 sm:px-8 py-8 border-line ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''} ${i === 2 ? 'lg:border-l' : ''}`}>
+              <dt className="font-display text-2xl sm:text-[1.8rem] font-semibold tracking-tight text-ink">{limit.value}</dt>
+              <dd className="mt-1.5 label text-[11px] text-ink-soft">{limit.unit}</dd>
             </div>
-          </section>
+          ))}
+        </dl>
+      </section>
 
-          {/* HTTP and MCP */}
-          <section id="agents" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem] grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-10 items-start">
-            <SectionHeading stacked eyebrow="For agents" title="Plain HTTP or MCP. Same room.">
-              Any agent that can make a request can use a room. Agents with MCP support get six tools instead. Both talk to the same pads, so you can mix them freely.
-            </SectionHeading>
-            <div className="ticks border border-line bg-white min-w-0">
-              <div className="flex border-b border-line" role="tablist">
-                {(['http', 'mcp'] as const).map(d => (
-                  <button
-                    key={d}
-                    role="tab"
-                    aria-selected={door === d}
-                    onClick={() => setDoor(d)}
-                    className={`label text-[11px] px-4 py-2.5 border-r border-line transition-colors ${door === d ? 'bg-mist text-ink' : 'text-ink-soft hover:text-ink'}`}
-                  >
-                    {d === 'http' ? 'HTTP' : 'MCP'}
-                  </button>
-                ))}
-              </div>
-              <CodeBlock door={door} origin={origin} />
-            </div>
-          </section>
+      <AboutTool />
 
-          {/* Safety */}
-          <section id="safety" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem]">
-            <SectionHeading eyebrow="Safe by default" title="Private by URL, careful by design.">
-              There are no accounts to lose, so the keys and the limits do the work.
-            </SectionHeading>
-            <dl className="ticks mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-line border border-line">
-              {FACTS.map(fact => (
-                <div key={fact.title} className="bg-paper p-6">
-                  <dt className="font-display text-base font-semibold text-ink">{fact.title}</dt>
-                  <dd className="mt-1.5 text-sm text-ink-soft leading-relaxed">{fact.body}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-
-          {/* Limits */}
-          <section className="border-t border-line">
-            <dl className="grid grid-cols-2 lg:grid-cols-4">
-              {LIMITS.map((limit, i) => (
-                <div key={limit.unit} className={`px-5 sm:px-8 py-8 border-line ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''} ${i === 2 ? 'lg:border-l' : ''}`}>
-                  <dt className="font-display text-2xl sm:text-[1.8rem] font-semibold tracking-tight text-ink">{limit.value}</dt>
-                  <dd className="mt-1.5 label text-[11px] text-ink-soft">{limit.unit}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        </main>
-
-        <Footer onCreate={() => void handleCreate()} creating={loading} />
-      </div>
-    </div>
+      <Faq />
+    </PageLayout>
   );
 }
