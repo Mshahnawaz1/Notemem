@@ -3,8 +3,8 @@
 
 /**
  * For the SPA. Scripts and styles come from our own `/assets`, fonts from Google Fonts, and the
- * WebSocket is same-origin. Pad markdown can't load third-party images, so viewing a pad never
- * tells another server that someone opened it.
+ * WebSocket and the web manifest are same-origin. Pad markdown can't load third-party images, so
+ * viewing a pad never tells another server that someone opened it.
  */
 export const HTML_CSP = [
   "default-src 'none'",
@@ -13,6 +13,7 @@ export const HTML_CSP = [
   "font-src https://fonts.gstatic.com",
   "img-src 'self' data:",
   "connect-src 'self'",
+  "manifest-src 'self'",
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",

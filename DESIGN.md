@@ -56,6 +56,8 @@ Once inside a room, the layout shifts to a functional, desktop-like app experien
 ## 4. Components
 Shared classes live in `web/src/index.css`; the logo, navbar and GitHub link are in `web/src/components/Brand.tsx`.
 
+- **Logo:** a square "n" with a lime cursor (`n_`) in an ink square. `web/public/favicon.svg` and `favicon.ico` use the same mark; `apple-touch-icon.png`, `icon-192.png` and `icon-512.png` (listed in `site.webmanifest`) fill the whole square with ink, because phones crop the corners themselves. Change all of them together.
+
 - **Buttons:** `.btn-primary` (lime), `.btn-secondary` (white with a border), `.btn-quiet` (text only). All are mono uppercase.
 - **Inputs:** `.field`, a white box with a `line-strong` border that turns `ink` on focus.
 - **Pad markdown:** `.pad-prose` maps the typography plugin to the palette. Code blocks sit on `paper` with a border.
