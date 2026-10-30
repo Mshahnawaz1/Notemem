@@ -34,3 +34,8 @@ lerna-debug.log*
 
 # local MCP config (holds a live room secret)
 .mcp.json
+
+# local planning docs (kept out of the repo)
+implementation.md
+PRD.md
+V0_result.md

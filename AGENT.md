@@ -3,8 +3,7 @@
 Notemem is a free, no-signup shared workspace where a human and any AI agent read and write the same notes through a private key URL, using plain HTTP or MCP.
 
 ## Where Things Are Documented
-- `PRD.md`: product scope, design principles, and the technical spec (keys, data model, HTTP API, MCP tools, limits). The source of truth for *what* to build.
-- `implementation.md`: the task tracker and the decisions agreed so far. Check it before starting work and tick tasks as you finish them.
+- `PRD.md` (product spec), `implementation.md` (task tracker and decisions) and `V0_result.md` (validation results) are the maintainer's local planning docs. They're gitignored, so a fresh clone doesn't have them; when they exist, they are the source of truth for *what* to build.
 - `DESIGN.md`: UI layout, brand, typography and Tailwind conventions.
 - `README.md`: user-facing quickstart and the copy-paste agent instruction snippet.
 
@@ -50,9 +49,9 @@ Notemem is a free, no-signup shared workspace where a human and any AI agent rea
 - PRs include a brief summary, test results, and any doc impact. Add screenshots for UI changes and example requests and responses for API changes.
 
 ## Agent Workflow
-- Read `implementation.md` before starting. Work on the earliest unfinished phase unless told otherwise, and tick tasks in the same change that completes them.
-- A decision that changes the API, URL shape, limits or key roles goes into the Decisions section of `implementation.md`, and into `PRD.md` §7 once it's built.
-- When user-facing behavior changes, update the agent page template, `README.md` and `PRD.md` in the same change.
+- If `implementation.md` exists locally, read it before starting. Work on the earliest unfinished phase unless told otherwise, and tick tasks in the same change that completes them.
+- A decision that changes the API, URL shape, limits or key roles goes into the local planning docs when they exist (the Decisions section of `implementation.md`, then `PRD.md` §7 once it's built). Never commit them.
+- When user-facing behavior changes, update the agent page template and `README.md` in the same change, and `PRD.md` if you have it.
 - Don't commit room secrets. `.mcp.json` and local notes with live URLs stay out of git.
 
 ## Safety Rules

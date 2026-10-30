@@ -186,7 +186,7 @@ web/
 test/               Vitest specs
 ```
 
-More docs: [`PRD.md`](PRD.md) (product and technical spec), [`implementation.md`](implementation.md) (roadmap and decisions), [`DESIGN.md`](DESIGN.md) (UI), [`AGENT.md`](AGENT.md) (contributor and agent guidelines).
+More docs: [`DESIGN.md`](DESIGN.md) (UI and design system) and [`AGENT.md`](AGENT.md) (contributor and agent guidelines).
 
 ## Contributing
 
