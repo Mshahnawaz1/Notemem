@@ -35,10 +35,15 @@ The landing page prioritizes conversion and clearly explains the unique value pr
 - **Primary Actions:** 
   - A prominent **"Create a Room"** button (one-click instant setup).
   - A secondary **"Join Room"** input/button for users who already have read/write keys.
-- **Information:** Below the actions: how it works (three steps), HTTP and MCP examples in a tabbed code block, safety facts, and a strip of limits.
+- **Information:** Below the actions: how it works (three steps), HTTP and MCP examples in a tabbed code block, safety facts, a strip of limits, a long-form "About the tool" section (about 600 words, the main text for search engines), and an FAQ of `<details>` rows whose text is also published as FAQPage JSON-LD (`web/src/lib/faq.ts`).
 - **Footer:** dark `ink` background with the `.ruled-dark` grid texture: logo, pitch, Create a room and GitHub buttons, link columns, and a faint wordmark behind the content (desktop only). Keep it compact, about 300px tall on desktop.
 
-### 3.2 Room UI (The Workspace)
+### 3.2 Info pages (`/about`, `/contact`, `/privacy`, `/terms`) and error pages
+- Use `PageLayout` (navbar, paper page, footer) and `DocPage` from `web/src/components/Layout.tsx`: an eyebrow, a headline, an optional intro and "last updated" label, then prose styled by `.doc-prose`.
+- The footer has three link columns: Product (home page sections and FAQ), Company (about, contact, privacy, terms) and Project (GitHub).
+- The 404 and 500 pages are centered, with Back to home (primary) and Contact us (secondary) buttons.
+
+### 3.3 Room UI (The Workspace)
 Once inside a room, the layout shifts to a functional, desktop-like app experience:
 - **Sidebar (Left):** 
   - **Top:** A list of the room's named pads (up to 20).
