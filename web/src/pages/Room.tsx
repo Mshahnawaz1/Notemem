@@ -349,7 +349,7 @@ export default function Room() {
   );
 
   return (
-    <div className="flex h-screen bg-white text-ink font-sans overflow-hidden">
+    <div className="flex h-screen h-dvh bg-white text-ink font-sans overflow-hidden">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -393,7 +393,7 @@ export default function Room() {
                   {p.name}
                 </button>
                 {canWrite && (
-                  <button onClick={() => void handleDelete(p.name)} aria-label={`Delete ${p.name}`} className="hidden group-hover:block px-2 text-ink-faint hover:text-red-700">×</button>
+                  <button onClick={() => void handleDelete(p.name)} aria-label={`Delete ${p.name}`} className="md:hidden md:group-hover:block px-2 text-ink-faint hover:text-red-700">×</button>
                 )}
               </li>
             ))}
