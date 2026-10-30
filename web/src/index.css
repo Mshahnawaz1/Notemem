@@ -4,10 +4,97 @@
 
 @layer base {
   body {
-    @apply bg-zinc-50 text-zinc-900 font-sans;
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+  ::selection {
+    @apply bg-brand text-ink;
   }
   /* The agent page the Worker embeds in #app until the SPA mounts. Inline styles are blocked by the CSP. */
   #app > pre {
     @apply whitespace-pre-wrap;
+  }
+}
+
+@layer components {
+  /* Faint ruled lines, like a notebook page. */
+  .ruled {
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(15, 42, 35, 0.045) 31px, rgba(15, 42, 35, 0.045) 32px);
+  }
+  /* The same lines in light ink, for dark surfaces. */
+  .ruled-dark {
+    background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, rgba(248, 246, 241, 0.06) 31px, rgba(248, 246, 241, 0.06) 32px),
+      repeating-linear-gradient(to right, transparent 0, transparent 31px, rgba(248, 246, 241, 0.03) 31px, rgba(248, 246, 241, 0.03) 32px);
+  }
+  /* The footer's large wordmark, faint enough to read as texture. */
+  .wordmark-faint {
+    color: rgba(248, 246, 241, 0.07);
+  }
+  .label {
+    @apply font-mono text-xs uppercase tracking-label;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 border font-mono text-sm uppercase tracking-label transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-brand border-brand text-ink hover:bg-brand-hover hover:border-brand-hover;
+  }
+  .btn-secondary {
+    @apply btn bg-white border-line-strong text-ink hover:bg-mist/50;
+  }
+  .btn-quiet {
+    @apply btn border-transparent text-ink-soft hover:text-ink hover:bg-ink/5;
+  }
+  .field {
+    @apply bg-white border border-line-strong text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink focus:ring-0;
+  }
+  /* Corner tick marks on framed cells. */
+  .ticks {
+    @apply relative;
+  }
+  .ticks::before,
+  .ticks::after {
+    content: '';
+    @apply absolute w-2 h-2 border-ink/40 pointer-events-none;
+  }
+  .ticks::before {
+    @apply -top-px -left-px border-t border-l;
+  }
+  .ticks::after {
+    @apply -bottom-px -right-px border-b border-r;
+  }
+}
+
+@layer components {
+  /* Rendered pad markdown, in the room's palette. */
+  .pad-prose {
+    --tw-prose-body: theme('colors.ink.DEFAULT');
+    --tw-prose-headings: theme('colors.ink.DEFAULT');
+    --tw-prose-links: theme('colors.ink.DEFAULT');
+    --tw-prose-bold: theme('colors.ink.DEFAULT');
+    --tw-prose-bullets: theme('colors.ink.faint');
+    --tw-prose-counters: theme('colors.ink.faint');
+    --tw-prose-quotes: theme('colors.ink.soft');
+    --tw-prose-quote-borders: theme('colors.brand.DEFAULT');
+    --tw-prose-hr: theme('colors.line.DEFAULT');
+    --tw-prose-code: theme('colors.ink.DEFAULT');
+    --tw-prose-pre-code: theme('colors.ink.DEFAULT');
+    --tw-prose-pre-bg: theme('colors.paper');
+    --tw-prose-th-borders: theme('colors.line.strong');
+    --tw-prose-td-borders: theme('colors.line.DEFAULT');
+  }
+  .pad-prose :where(h1, h2, h3) {
+    @apply font-display tracking-tight;
+  }
+  .pad-prose pre {
+    @apply rounded-none border border-line;
+  }
+  .pad-prose a {
+    @apply decoration-brand decoration-2 underline-offset-2;
+  }
+  .pad-prose li:has(> input[type='checkbox']) {
+    @apply list-none -ml-6;
+  }
+  .pad-prose input[type='checkbox'] {
+    @apply mr-2 my-0 accent-ink;
   }
 }
