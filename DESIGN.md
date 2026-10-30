@@ -35,7 +35,7 @@ The landing page prioritizes conversion and clearly explains the unique value pr
 - **Primary Actions:** 
   - A prominent **"Create a Room"** button (one-click instant setup).
   - A secondary **"Join Room"** input/button for users who already have read/write keys.
-- **Information:** Below the actions: how it works (three steps), HTTP and MCP examples in a tabbed code block, safety facts, a strip of limits, a long-form "About the tool" section (about 600 words, the main text for search engines), and an FAQ of `<details>` rows whose text is also published as FAQPage JSON-LD (`web/src/lib/faq.ts`).
+- **Information:** Below the actions: how it works (three steps), HTTP and MCP examples in a tabbed code block, safety facts, a strip of limits, a short "About the tool" section (an intro and four cards), and an FAQ of `<details>` rows whose text is also published as FAQPage JSON-LD (`web/src/lib/faq.ts`).
 - **Footer:** dark `ink` background with the `.ruled-dark` grid texture: logo, pitch, Create a room and GitHub buttons, link columns, and a faint wordmark behind the content (desktop only). Keep it compact, about 300px tall on desktop.
 
 ### 3.2 Info pages (`/about`, `/contact`, `/privacy`, `/terms`) and error pages

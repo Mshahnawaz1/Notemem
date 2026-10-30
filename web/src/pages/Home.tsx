@@ -87,20 +87,20 @@ function CodeBlock({ door, origin }: { door: Door; origin: string }) {
 
 const ABOUT = [
   {
-    title: 'Why agents need a shared place to write',
-    body: 'AI coding agents are good at long tasks, but their memory ends with the session. When a cloud agent finishes a research step and a local coding agent has to continue, or when you want to check progress from your phone, there is usually no common place to put the work. Copying text between chat windows loses context, and a file on one machine is invisible to an agent running somewhere else. Notemem gives every participant the same notes through a URL, so a plan written by one agent can be picked up by another, reviewed by a person and updated again, wherever each of them runs.',
+    title: 'One place for every agent',
+    body: 'Agents lose their notes when a session ends, and a file on one machine is invisible to an agent running elsewhere. A room gives every agent and person the same notes through one URL.',
   },
   {
-    title: 'Works with any agent: plain HTTP or MCP',
-    body: 'Any agent that can make a web request can use a room. A GET request on the room URL returns a short markdown page that explains the API, so you can paste the URL into a prompt with one sentence of instruction and the agent works out the rest. Pads are read as plain text, appended with a POST and replaced with a PUT. Agents with Model Context Protocol support, such as Claude Code, Cursor, Codex and other MCP clients, can add the room as a remote MCP server and get six tools for listing, reading, writing, appending, deleting and viewing history. Chat assistants that can only fetch pages can still read a room.',
+    title: 'Plain HTTP or MCP',
+    body: 'Paste the URL into a prompt and the agent reads how to use it. MCP clients like Claude Code, Cursor and Codex can add the room as a server instead.',
   },
   {
-    title: 'Safe concurrent edits',
-    body: 'When several agents write to the same notes, the usual failure is a silent overwrite: one agent saves an old copy over another agent\'s work. Notemem prevents it with versioned writes. Replacing a pad requires the version number you last read, sent as an If-Match header or an MCP argument, and a stale write is rejected with a clear message telling the agent to re-read and try again. Appending never conflicts, which makes it the right choice for logs and checklists. Every revision is kept in the pad\'s history, up to 50 per pad, so earlier text can be restored.',
+    title: 'No lost edits',
+    body: 'Replacing a pad needs the version you last read, so a stale write is rejected instead of overwriting newer work. Every revision is kept and can be restored.',
   },
   {
-    title: 'Private by URL, with read-only sharing',
-    body: 'Each room has two keys: a write URL for you and your trusted agents, and a read-only URL you can share for review. Only hashes of the keys are stored, keys never appear in logs, and room pages are served with noindex and no referrer, so they stay out of search engines and analytics. Agents are told up front that pad contents are user data, not instructions, which helps against prompt injection through shared notes. Rooms are temporary by design: a room is deleted after 30 days without a change, and any write resets the clock.',
+    title: 'Private and temporary',
+    body: 'Separate read and write URLs, only key hashes stored, and no search indexing. A room is deleted after 30 days without changes.',
   },
 ];
 
@@ -108,21 +108,15 @@ function AboutTool() {
   return (
     <section id="about-notemem" className="scroll-mt-4 border-t border-line px-4 sm:px-8 py-14 sm:py-[4.5rem]">
       <SectionHeading eyebrow="About the tool" title="A shared notebook for humans and AI agents.">
-        Notemem is a free shared workspace where you and any AI agent read and write the same notes. You open a room with one click, and its private URL is all anyone needs: no accounts, no API keys to register and no SDK to install. A room holds up to 20 markdown pads, such as a plan, a task list, a decision log or a handoff note, and every change is versioned.
+        Notemem is a free workspace where you and your AI agents read and write the same markdown notes. One click opens a room. No accounts, no API keys, no SDK.
       </SectionHeading>
-      <div className="ticks mt-10 grid md:grid-cols-2 gap-px bg-line border border-line">
+      <div className="ticks mt-10 grid sm:grid-cols-2 gap-px bg-line border border-line">
         {ABOUT.map(item => (
-          <div key={item.title} className="bg-white p-6 sm:p-7">
+          <div key={item.title} className="bg-white p-6">
             <h3 className="font-display text-[17px] font-semibold text-ink">{item.title}</h3>
             <p className="mt-2 text-sm text-ink-soft leading-relaxed">{item.body}</p>
           </div>
         ))}
-      </div>
-      <div className="mt-10 grid gap-4 lg:grid-cols-2 lg:gap-12">
-        <h3 className="font-display text-[17px] font-semibold text-ink">What people use it for</h3>
-        <p className="text-sm sm:text-base text-ink-soft leading-relaxed">
-          Common uses include handing a plan from a planning agent to a coding agent, keeping a task list that several agents tick off, collecting research notes from a cloud agent to read on your phone, leaving instructions for an agent that runs on a schedule, and giving a reviewer read-only access to an agent's progress log. The web view updates live, so you can watch an agent work and step in by editing the same pad. Notemem is open source and free: create a room, hand the URL to your agent, and work from the same page.
-        </p>
       </div>
     </section>
   );
