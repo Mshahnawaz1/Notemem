@@ -33,6 +33,8 @@ jobs:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # The Cloudflare secrets live in this GitHub environment, not at repo level.
+    environment: CLOUDFLARE_API_TOKEN
     concurrency:
       group: deploy
       cancel-in-progress: false
