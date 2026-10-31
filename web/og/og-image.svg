@@ -1,0 +1,55 @@
+<!-- Source for web/public/og-image.png, the link preview image (1200x630). Render it with web/og/render.mjs. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <pattern id="ruled" width="1200" height="36" patternUnits="userSpaceOnUse">
+      <rect x="0" y="35" width="1200" height="1" fill="#0F2A23" fill-opacity="0.055"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#F8F6F1"/>
+  <rect width="1200" height="630" fill="url(#ruled)"/>
+
+  <!-- Logo and wordmark -->
+  <g transform="translate(72 64) scale(1.75)">
+    <rect x="3" y="3" width="26" height="26" fill="#0F2A23"/>
+    <path d="M7 10h11v12h-3.5v-8.5h-4V22H7z" fill="#F8F6F1"/>
+    <rect x="20" y="19" width="5" height="3" fill="#C1E05A"/>
+  </g>
+  <text x="138" y="104" font-family="Inter Tight" font-weight="600" font-size="34" letter-spacing="-0.6" fill="#0F2A23">Notemem</text>
+  <text x="1128" y="102" text-anchor="end" font-family="JetBrains Mono" font-weight="500" font-size="17" letter-spacing="2.5" fill="#4F6B63">FREE · NO SIGNUP · OPEN SOURCE</text>
+
+  <!-- Headline -->
+  <text font-family="Inter Tight" font-weight="600" font-size="68" letter-spacing="-2" fill="#0F2A23">
+    <tspan x="72" y="262">Shared notes</tspan>
+    <tspan x="72" y="340">for you and your</tspan>
+    <tspan x="72" y="418" fill="#4F6B63">AI agents.</tspan>
+  </text>
+  <text font-family="Inter" font-weight="400" font-size="24" fill="#4F6B63">
+    <tspan x="72" y="482">One private URL. Read and write the same</tspan>
+    <tspan x="72" y="516">markdown pads over plain HTTP or MCP.</tspan>
+  </text>
+
+  <!-- A pad, framed like the landing page cells -->
+  <g transform="translate(700 182)">
+    <rect x="0.5" y="0.5" width="427" height="300" fill="#FFFFFF" stroke="#B9C6C1"/>
+    <rect x="0.5" y="0.5" width="427" height="48" fill="#DCEBEA" stroke="#B9C6C1"/>
+    <text x="22" y="31" font-family="JetBrains Mono" font-weight="500" font-size="16" letter-spacing="1.5" fill="#0F2A23">PAD · PLAN</text>
+    <text x="406" y="31" text-anchor="end" font-family="JetBrains Mono" font-weight="500" font-size="16" fill="#4F6B63">v3</text>
+    <g font-family="JetBrains Mono" font-weight="500" font-size="18" fill="#0F2A23">
+      <text x="22" y="92"># Ship the release</text>
+      <text x="22" y="132"><tspan fill="#4F6B63">- [x]</tspan> cloud agent: spec</text>
+      <text x="22" y="168"><tspan fill="#4F6B63">- [x]</tspan> coding agent: build</text>
+      <text x="22" y="204"><tspan fill="#4F6B63">- [ ]</tspan> you: review on phone</text>
+    </g>
+    <rect x="22" y="236" width="12" height="20" fill="#C1E05A"/>
+    <!-- corner ticks -->
+    <g stroke="#0F2A23" stroke-width="2" fill="none">
+      <path d="M-8 6V-8H6"/><path d="M422 -8H436V6"/><path d="M-8 294V308H6"/><path d="M422 308H436V294"/>
+    </g>
+  </g>
+
+  <!-- Footer strip -->
+  <rect x="0" y="574" width="1200" height="56" fill="#0F2A23"/>
+  <rect x="0" y="574" width="1200" height="4" fill="#C1E05A"/>
+  <text x="72" y="610" font-family="JetBrains Mono" font-weight="500" font-size="18" letter-spacing="1.5" fill="#F8F6F1">notemem.mshahnawaz.me</text>
+  <text x="1128" y="610" text-anchor="end" font-family="JetBrains Mono" font-weight="500" font-size="16" letter-spacing="2.5" fill="#C1E05A">CLAUDE CODE · CURSOR · CODEX · ANY MCP CLIENT</text>
+</svg>
