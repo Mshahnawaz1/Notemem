@@ -5,6 +5,14 @@ export const SITE_URL = 'https://notemem.mshahnawaz.me';
 export const SITE_NAME = 'Notemem';
 export const GITHUB_URL = 'https://github.com/Mshahnawaz1/Notemem';
 
+/** The link preview image, rendered from `web/og/og-image.svg`. Social sites need an absolute URL. */
+export const OG_IMAGE = {
+  url: `${SITE_URL}/og-image.png`,
+  width: '1200',
+  height: '630',
+  alt: 'Notemem: shared notes for you and your AI agents. One private URL to read and write the same markdown pads over HTTP or MCP.',
+};
+
 type PageMeta = { title: string; description: string; noindex?: boolean };
 
 /** Title and description for each public page; `vite.config.ts` prerenders each one. Room pages are never indexed and use `ROOM_TITLE`. */
@@ -12,12 +20,12 @@ export const PAGES: Record<string, PageMeta> = {
   '/': {
     title: 'Notemem: shared notes for you and your AI agents',
     description:
-      'Free, no-signup shared notes for humans and AI agents. Create a room, hand the private URL to Claude Code, Cursor, Codex or any MCP client, and read and write the same markdown pads over plain HTTP or MCP.',
+      'Free, no-signup shared notes for you and your AI agents. Give Claude Code, Cursor or any MCP client one private URL to read and write the same pads.',
   },
   '/about': {
     title: 'About Notemem',
     description:
-      'Notemem is an open-source shared workspace where people and AI agents read and write the same notes through a private URL. Why it exists and the principles behind it.',
+      'Notemem is an open-source workspace where people and AI agents share notes through one private URL. Why it exists and the principles behind it.',
   },
   '/contact': {
     title: 'Contact Notemem',
@@ -68,7 +76,17 @@ export function headFor(path: string): { lang: string; title: string; elements: 
     tag('meta', { property: 'og:site_name', content: SITE_NAME }),
     tag('meta', { property: 'og:title', content: meta.title }),
     tag('meta', { property: 'og:description', content: meta.description }),
-    tag('meta', { name: 'twitter:card', content: 'summary' }),
+    tag('meta', { property: 'og:locale', content: 'en_US' }),
+    tag('meta', { property: 'og:image', content: OG_IMAGE.url }),
+    tag('meta', { property: 'og:image:type', content: 'image/png' }),
+    tag('meta', { property: 'og:image:width', content: OG_IMAGE.width }),
+    tag('meta', { property: 'og:image:height', content: OG_IMAGE.height }),
+    tag('meta', { property: 'og:image:alt', content: OG_IMAGE.alt }),
+    tag('meta', { name: 'twitter:card', content: 'summary_large_image' }),
+    tag('meta', { name: 'twitter:title', content: meta.title }),
+    tag('meta', { name: 'twitter:description', content: meta.description }),
+    tag('meta', { name: 'twitter:image', content: OG_IMAGE.url }),
+    tag('meta', { name: 'twitter:image:alt', content: OG_IMAGE.alt }),
   ];
   if (meta.noindex) {
     elements.push(tag('meta', { name: 'robots', content: 'noindex' }));
@@ -85,9 +103,21 @@ export function headFor(path: string): { lang: string; title: string; elements: 
           name: SITE_NAME,
           url: `${SITE_URL}/`,
           description: meta.description,
+          image: OG_IMAGE.url,
           applicationCategory: 'DeveloperApplication',
           operatingSystem: 'Any',
+          isAccessibleForFree: true,
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          sameAs: [GITHUB_URL],
+        }),
+      }),
+      tag('script', {
+        type: 'application/ld+json',
+        children: json({
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: SITE_NAME,
+          url: `${SITE_URL}/`,
         }),
       }),
       tag('script', {

@@ -57,6 +57,7 @@ Once inside a room, the layout shifts to a functional, desktop-like app experien
 Shared classes live in `web/src/index.css`; the logo, navbar and GitHub link are in `web/src/components/Brand.tsx`.
 
 - **Logo:** a square "n" with a lime cursor (`n_`) in an ink square. `web/public/favicon.svg` and `favicon.ico` use the same mark; `apple-touch-icon.png`, `icon-192.png` and `icon-512.png` (listed in `site.webmanifest`) fill the whole square with ink, because phones crop the corners themselves. Change all of them together.
+- **Link preview:** `web/public/og-image.png` (1200×630) is what chat apps and social sites show for a shared link; `OG_IMAGE` in `web/src/lib/site.ts` puts it on every public page. Edit its source, `web/og/og-image.svg`, and render it with `web/og/render.mjs` (the script lists what it needs). Keep the text away from the edges, since some sites crop the image to a square or 1.91:1.
 
 - **Buttons:** `.btn-primary` (lime), `.btn-secondary` (white with a border), `.btn-quiet` (text only). All are mono uppercase.
 - **Inputs:** `.field`, a white box with a `line-strong` border that turns `ink` on focus.

@@ -1,3 +1,4 @@
+import { env } from 'cloudflare:test'
 import { describe, it, expect } from 'vitest'
 import { call, createRoom, postJson, putJson } from './helpers'
 
@@ -129,6 +130,21 @@ describe('public pages', () => {
     expect(agent.headers.get('Content-Type')).toMatch(/^text\/plain/)
   })
 
+  it('gives the public pages a large link preview image that is served', async () => {
+    const home = await (await env.ASSETS.fetch('http://example.com/')).text()
+    expect(home).toContain('<meta property="og:image" content="https://notemem.mshahnawaz.me/og-image.png"')
+    expect(home).toContain('<meta property="og:image:width" content="1200"')
+    expect(home).toContain('<meta property="og:image:height" content="630"')
+    expect(home).toContain('<meta name="twitter:card" content="summary_large_image"')
+    expect(home).toContain('<meta name="twitter:image" content="https://notemem.mshahnawaz.me/og-image.png"')
+    const about = await (await env.ASSETS.fetch('http://example.com/about')).text()
+    expect(about).toContain('<meta property="og:image" content="https://notemem.mshahnawaz.me/og-image.png"')
+
+    const image = await env.ASSETS.fetch('http://example.com/og-image.png')
+    expect(image.status).toBe(200)
+    expect(image.headers.get('Content-Type')).toBe('image/png')
+  })
+
   it('strips the home page SEO tags from the shell served for a room', async () => {
     const room = await createRoom()
     const html = await (await call(room.base, { headers: BROWSER })).text()
@@ -136,5 +152,6 @@ describe('public pages', () => {
     expect(html).not.toContain('data-seo')
     expect(html).not.toContain('rel="canonical"')
     expect(html).not.toContain('application/ld+json')
+    expect(html).not.toContain('og:image')
   })
 })
