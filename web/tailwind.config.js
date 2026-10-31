@@ -25,9 +25,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'SF Pro', 'sans-serif'],
-        display: ['"Inter Tight"', 'Inter', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        sans: ['"Inter Variable"', 'Inter', 'SF Pro', 'sans-serif'],
+        display: ['"Inter Tight Variable"', '"Inter Variable"', 'sans-serif'],
+        mono: ['"JetBrains Mono Variable"', 'monospace'],
       },
       letterSpacing: {
         label: '0.08em',

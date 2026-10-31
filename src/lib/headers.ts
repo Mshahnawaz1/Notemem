@@ -2,15 +2,15 @@
 // (the home page, `/assets/*`) get the same headers from `web/public/_headers`; keep them in sync.
 
 /**
- * For the SPA. Scripts and styles come from our own `/assets`, fonts from Google Fonts, and the
+ * For the SPA. Scripts, styles and fonts come from our own `/assets`, and the
  * WebSocket and the web manifest are same-origin. Pad markdown can't load third-party images, so
  * viewing a pad never tells another server that someone opened it.
  */
 export const HTML_CSP = [
   "default-src 'none'",
   "script-src 'self'",
-  "style-src 'self' https://fonts.googleapis.com",
-  "font-src https://fonts.gstatic.com",
+  "style-src 'self'",
+  "font-src 'self'",
   "img-src 'self' data:",
   "connect-src 'self'",
   "manifest-src 'self'",

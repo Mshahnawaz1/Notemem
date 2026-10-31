@@ -1,5 +1,9 @@
 import { render } from 'preact'
 import { Router } from 'wouter'
+// Fonts are bundled into /assets, so the page doesn't wait on a third-party stylesheet.
+import '@fontsource-variable/inter/wght.css'
+import '@fontsource-variable/inter-tight/wght.css'
+import '@fontsource-variable/jetbrains-mono/wght.css'
 import './index.css'
 import { App } from './app.tsx'
 import { headFor } from './lib/site'
