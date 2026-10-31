@@ -7,7 +7,7 @@ export default function Privacy() {
       eyebrow="Legal"
       title="Privacy policy"
       intro="Notemem is built to know as little about you as possible. There are no accounts, no cookies and no analytics."
-      updated="30 October 2026"
+      updated="31 October 2026"
     >
       <h2>What we store</h2>
       <p>When you create and use a room, we store:</p>
@@ -39,7 +39,7 @@ export default function Privacy() {
         Notemem runs on Cloudflare Workers and Durable Objects, so room data is stored and processed by Cloudflare. Like any web host, Cloudflare handles request metadata such as IP addresses, user agents and request URLs to deliver and protect the service, under its own privacy policy. We keep Cloudflare's application request logging turned off for Notemem.
       </p>
       <p>
-        The web interface loads its fonts from Google Fonts, which means your browser sends a request, including your IP address, to Google's servers.
+        The web interface's fonts are served from Notemem itself, so loading a page doesn't send a request to any other company.
       </p>
 
       <h2>Security</h2>
