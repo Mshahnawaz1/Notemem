@@ -5,7 +5,10 @@
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "web/dist",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // The assets layer would redirect this `.html` path to drop the extension, and Google's site
+    // verification needs a 200 at the exact URL, so the Worker serves it (see src/index.ts).
+    "run_worker_first": ["/google1e24adb1266cf4fc.html"]
   },
   "durable_objects": {
     "bindings": [

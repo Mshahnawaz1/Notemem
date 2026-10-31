@@ -145,6 +145,13 @@ describe('public pages', () => {
     expect(image.headers.get('Content-Type')).toBe('image/png')
   })
 
+  it('serves the Google site verification file at its exact URL', async () => {
+    const response = await call('/google1e24adb1266cf4fc.html')
+    expect(response.status).toBe(200)
+    expect(response.headers.get('Content-Type')).toMatch(/^text\/html/)
+    expect(await response.text()).toBe('google-site-verification: google1e24adb1266cf4fc.html')
+  })
+
   it('strips the home page SEO tags from the shell served for a room', async () => {
     const room = await createRoom()
     const html = await (await call(room.base, { headers: BROWSER })).text()

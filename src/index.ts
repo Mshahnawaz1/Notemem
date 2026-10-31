@@ -29,6 +29,11 @@ app.post('/api/rooms', async (c) => {
   })
 })
 
+// Google Search Console ownership check for notemem.mshahnawaz.me. Listed in `run_worker_first` in
+// wrangler.jsonc, because a static file at this path would be redirected to drop `.html`.
+const GOOGLE_VERIFICATION = 'google1e24adb1266cf4fc.html'
+app.get(`/${GOOGLE_VERIFICATION}`, (c) => c.html(`google-site-verification: ${GOOGLE_VERIFICATION}`))
+
 // TEMPORARY (Phase V): log request headers to pick the browser-detection signal. Remove after the spike.
 app.use('/r/*', async (c, next) => {
   const path = redactSecrets(new URL(c.req.url).pathname)
